@@ -6,7 +6,7 @@
  * -----------------------------------------------------------------------
  * CORRECTNESS PROOF
  * -----------------------------------------------------------------------
- * Let S be a uniform random 32-bit mask. Define S' = S XOR (1 << i),
+ * Let S be a uniform random N-bit mask (N = DB_SIZE). Define S' = S XOR (1 << i),
  * flipping exactly bit i. The client sends S to Server 1 and S' to Server 2.
  *
  * Case A — bit i is SET in S:  S' = S \ {i}  (S' has bit i cleared)
@@ -23,9 +23,9 @@
  *   r1 ⊕ r2 = db[i]  ✓
  *
  * Privacy:
- *   Server 1 sees S  — a uniform random 32-bit value. No information about i.
+ *   Server 1 sees S  — a uniform random N-bit value. No information about i.
  *   Server 2 sees S' — S with one bit flipped. From Server 2's view, S' is
- *   also uniformly distributed over 32-bit integers (XOR with any fixed value
+ *   also uniformly distributed over N-bit integers (XOR with any fixed value
  *   preserves the uniform distribution). Neither server alone can determine i.
  *   The privacy guarantee is INFORMATION-THEORETIC: it holds regardless of
  *   server computational power.
@@ -33,7 +33,7 @@
  */
 
 import type { PIRQuery, PIRResult } from './types.ts';
-import { CATALOG } from './catalog.ts';
+import { CATALOG, DB_SIZE } from './catalog.ts';
 
 const decoder = new TextDecoder('utf-8');
 
@@ -53,22 +53,23 @@ export function xorBytes(a: Uint8Array, b: Uint8Array): Uint8Array {
 }
 
 /**
- * Generate a PIR query pair for the given target index (0–31).
+ * Generate a PIR query pair for the given target index (0 to DB_SIZE-1).
  * Uses crypto.getRandomValues for cryptographically random S.
  *
  * Returns:
- *   maskS      — Server 1's query: a uniform random 32-bit integer
+ *   maskS      — Server 1's query: a uniform random N-bit integer (N = DB_SIZE)
  *   maskSPrime — Server 2's query: maskS with bit targetIndex flipped
  *   differingBit — always equals targetIndex
  */
 export function generateQuery(targetIndex: number): PIRQuery {
-  if (targetIndex < 0 || targetIndex > 31) {
-    throw new Error(`generateQuery: targetIndex ${targetIndex} out of range [0,31]`);
+  if (targetIndex < 0 || targetIndex >= DB_SIZE) {
+    throw new Error(`generateQuery: targetIndex ${targetIndex} out of range [0,${DB_SIZE - 1}]`);
   }
 
   const rand = new Uint32Array(1);
   crypto.getRandomValues(rand);
-  const maskS = rand[0]; // uniform random 32-bit unsigned integer
+  // Mask to DB_SIZE bits so only valid bit positions are used
+  const maskS = rand[0] & ((1 << DB_SIZE) - 1);
 
   // Flip exactly bit targetIndex to produce S'
   const maskSPrime = maskS ^ (1 << targetIndex);
@@ -83,14 +84,14 @@ export function generateQuery(targetIndex: number): PIRQuery {
 
 /**
  * Simulate a single PIR server response.
- * For each bit position j (0–31), if that bit is set in `mask`,
+ * For each bit position j (0 to DB_SIZE-1), if that bit is set in `mask`,
  * XOR db[j] into the accumulator.
  *
  * Used for both Server 1 (pass maskS) and Server 2 (pass maskSPrime).
  */
 export function runServer(db: Uint8Array[], mask: number): Uint8Array {
   const result = new Uint8Array(64); // initialized to zeros
-  for (let j = 0; j < 32; j++) {
+  for (let j = 0; j < DB_SIZE; j++) {
     if ((mask >>> j) & 1) {
       for (let k = 0; k < 64; k++) {
         result[k] ^= db[j][k];
@@ -138,7 +139,7 @@ export function runFullPIR(db: Uint8Array[], targetIndex: number): PIRResult {
  */
 export function getSetBits(mask: number): number[] {
   const bits: number[] = [];
-  for (let j = 0; j < 32; j++) {
+  for (let j = 0; j < DB_SIZE; j++) {
     if ((mask >>> j) & 1) bits.push(j);
   }
   return bits;

@@ -3,7 +3,7 @@
  * DOM wiring, event listeners, and state machine for the IT-PIR demo.
  */
 
-import { CATALOG, DATABASE } from './catalog.ts';
+import { CATALOG, DATABASE, DB_SIZE } from './catalog.ts';
 import { runFullPIR, getSetBits } from './pir.ts';
 import {
   renderBitmask,
@@ -51,7 +51,7 @@ function resetAllPhases(): void {
 // ============================================================
 // Catalog rendering
 // ============================================================
-const PREVIEW_COUNT = 4;
+const PREVIEW_COUNT = 8;
 let catalogExpanded = false;
 
 function renderCatalog(): void {
@@ -176,23 +176,23 @@ async function runProtocol(): Promise<void> {
   await delay(100);
 
   // Render bitmasks
-  renderBitmask(el('mask-s1'), query.maskS, 'var(--color-s1)', true);
-  renderBitmask(el('mask-s2'), query.maskSPrime, 'var(--color-s2)', true);
+  renderBitmask(el('mask-s1'), query.maskS, 'var(--color-s1)', true, DB_SIZE);
+  renderBitmask(el('mask-s2'), query.maskSPrime, 'var(--color-s2)', true, DB_SIZE);
 
-  // Wait for stagger animation to complete (32 * 25ms + 80ms)
-  await delay(32 * 25 + 150);
+  // Wait for stagger animation to complete (DB_SIZE * 25ms + 80ms)
+  await delay(DB_SIZE * 25 + 150);
 
   // Highlight differing bit
   highlightBit(el('mask-s1'), query.differingBit);
   highlightBit(el('mask-s2'), query.differingBit);
 
   // Show hex masks
-  el('mask-s1-hex').textContent = '0x' + query.maskS.toString(16).padStart(8, '0');
-  el('mask-s2-hex').textContent = '0x' + query.maskSPrime.toString(16).padStart(8, '0');
+  el('mask-s1-hex').textContent = '0x' + query.maskS.toString(16).padStart(Math.ceil(DB_SIZE / 4), '0');
+  el('mask-s2-hex').textContent = '0x' + query.maskSPrime.toString(16).padStart(Math.ceil(DB_SIZE / 4), '0');
   el('differing-bit-num').textContent = String(query.differingBit);
 
   // Update PIR comparison panel
-  el('pir-mask-display').textContent = query.maskS.toString(16).padStart(8, '0');
+  el('pir-mask-display').textContent = query.maskS.toString(16).padStart(Math.ceil(DB_SIZE / 4), '0');
 
   await delay(800);
 
@@ -254,13 +254,13 @@ async function runProtocol(): Promise<void> {
   el('s1-indices').textContent = s1Bits.length > 0
     ? s1Bits.map(i => `[${i}]`).join(' ') 
     : '(empty set)';
-  el('s1-count').textContent = `${s1Bits.length} of 32 slots set`;
+  el('s1-count').textContent = `${s1Bits.length} of ${DB_SIZE} slots set`;
 
   // Server 2 indices
   el('s2-indices').textContent = s2Bits.length > 0
     ? s2Bits.map(i => `[${i}]`).join(' ')
     : '(empty set)';
-  el('s2-count').textContent = `${s2Bits.length} of 32 slots set`;
+  el('s2-count').textContent = `${s2Bits.length} of ${DB_SIZE} slots set`;
 
   el('final-book-title').textContent = result.reconstructed;
 
@@ -334,7 +334,7 @@ function initEventListeners(): void {
 // Self-audit / adversarial tests (run in dev mode)
 // ============================================================
 function runSelfAudit(): void {
-  const testIndices = [0, 7, 15, 31];
+  const testIndices = [0, 3, 5, 7];
   let allPassed = true;
 
   for (const i of testIndices) {
@@ -352,9 +352,9 @@ function runSelfAudit(): void {
     }
   }
 
-  // 100-iteration randomness test for index 7
+  // 100-iteration randomness test for index 3
   for (let run = 0; run < 100; run++) {
-    const r = runFullPIR(DATABASE, 7);
+    const r = runFullPIR(DATABASE, 3);
     if (!r.isCorrect) {
       console.error(`[patron-shield AUDIT FAIL] randomness test run ${run}: got "${r.reconstructed}"`);
       allPassed = false;

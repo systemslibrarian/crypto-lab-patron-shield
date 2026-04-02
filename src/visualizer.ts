@@ -14,7 +14,8 @@ export function renderBitmask(
   container: HTMLElement,
   mask: number,
   color: string,
-  animateIn: boolean
+  animateIn: boolean,
+  numBits: number = 8
 ): void {
   container.innerHTML = '';
   container.style.setProperty('--server-color', color);
@@ -22,7 +23,7 @@ export function renderBitmask(
   const grid = document.createElement('div');
   grid.className = 'bit-grid';
 
-  for (let i = 0; i < 32; i++) {
+  for (let i = 0; i < numBits; i++) {
     const bit = (mask >>> i) & 1;
     const sq = document.createElement('div');
     sq.className = `bit-square bit-${bit}`;
