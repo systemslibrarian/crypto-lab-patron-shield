@@ -2,7 +2,7 @@
 
 **A browser-based interactive demo of Two-Server Information-Theoretic Private Information Retrieval (IT-PIR) applied to library catalog privacy.**
 
-Live demo: **https://systemslibrarian.github.io/patron-shield/**
+**[Live demo](https://systemslibrarian.github.io/patron-shield/)**
 
 ---
 
