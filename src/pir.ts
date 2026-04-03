@@ -135,7 +135,7 @@ export function runFullPIR(db: Uint8Array[], targetIndex: number): PIRResult {
 }
 
 /**
- * Return an array of bit indices that are set in a 32-bit mask.
+ * Return an array of bit indices that are set in a mask.
  */
 export function getSetBits(mask: number): number[] {
   const bits: number[] = [];

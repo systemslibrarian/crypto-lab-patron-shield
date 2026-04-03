@@ -42,7 +42,7 @@ export function encodeBook(book: Book): Uint8Array {
 }
 
 /**
- * Encode all 32 books into their 64-byte representations.
+ * Encode all books into their 64-byte representations.
  * Called once at module load.
  */
 export function encodeDatabase(): Uint8Array[] {

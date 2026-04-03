@@ -8,8 +8,8 @@ export interface Book {
 
 export interface PIRQuery {
   targetIndex: number;
-  maskS: number;      // 32-bit integer — Server 1's query
-  maskSPrime: number; // 32-bit integer — Server 2's query
+  maskS: number;      // N-bit integer — Server 1's query
+  maskSPrime: number; // N-bit integer — Server 2's query
   differingBit: number; // which bit position differs (= targetIndex)
 }
 

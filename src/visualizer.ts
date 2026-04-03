@@ -1,12 +1,12 @@
 /**
  * patron-shield — Bitmask Visualizer
- * Renders 32-bit masks as animated bit-square grids and XOR chains.
+ * Renders N-bit masks as animated bit-square grids and XOR chains.
  */
 
 import type { Book } from './types.ts';
 
 /**
- * Render a 32-bit mask as a 4×8 grid of bit squares.
+ * Render an N-bit mask as a grid of bit squares.
  * Each square is 14×14px; 0-bits are dark, 1-bits use the provided color.
  * If animateIn=true, each square fades in with a staggered delay.
  */

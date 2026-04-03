@@ -144,7 +144,7 @@ async function flashCards(indices: number[], serverClass: string): Promise<void>
 async function runProtocol(): Promise<void> {
   if (selectedBook === null) return;
 
-  // Expand catalog so flash animations can target all 32 cards
+  // Expand catalog so flash animations can target all cards
   if (!catalogExpanded) {
     catalogExpanded = true;
     renderCatalog();
