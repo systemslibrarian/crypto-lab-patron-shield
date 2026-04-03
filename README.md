@@ -12,7 +12,7 @@ Every time you search a library catalog, the server learns what you looked for. 
 
 **Private Information Retrieval (PIR)** solves this: you can retrieve any item from a database and the server learns *nothing* about which item you chose. The guarantee isn't based on computational hardness. It's **information-theoretic** — it holds even against a server with unlimited computing power.
 
-This project implements the 1995 Chor–Goldreich–Kushilevitz–Sudan two-server IT-PIR protocol as a fully interactive educational demo. A visitor can select any of 32 books from a library catalog, click "Query Privately," and watch the complete protocol execute step-by-step: bitmask generation, XOR computation on both simulated servers, and final reconstruction — with the book title emerging from a cryptographic XOR.
+This project implements the 1995 Chor–Goldreich–Kushilevitz–Sudan two-server IT-PIR protocol as a fully interactive educational demo. A visitor can select any of 8 books from a library catalog, click "Query Privately," and watch the complete protocol execute step-by-step: bitmask generation, XOR computation on both simulated servers, and final reconstruction — with the book title emerging from a cryptographic XOR.
 
 ---
 
@@ -24,10 +24,10 @@ The idea is elegant: instead of asking one server for a book, you ask two server
 
 ### Technical description (Chor et al., 1995)
 
-Given a database of `N = 32` books (each encoded as 64 bytes), and a client who wants item at index `i` (0 ≤ i ≤ 31):
+Given a database of `N = 8` books (each encoded as 64 bytes), and a client who wants item at index `i` (0 ≤ i ≤ 7):
 
 1. **Client generates a query pair:**
-	- `S` = uniformly random 32-bit integer (using `crypto.getRandomValues`)
+	- `S` = uniformly random 8-bit integer (using `crypto.getRandomValues`)
 	- `S′` = `S XOR (1 << i)` — identical to `S` but with bit `i` flipped
 
 2. **Server 1** receives `S`, computes `r₁ = XOR of db[j] for all j where bit j of S is set`
@@ -45,7 +45,7 @@ Given a database of `N = 32` books (each encoded as 64 bytes), and a client who 
 
 ## The Privacy Guarantee
 
-**Server 1** sees `S` — a value drawn uniformly at random from all 32-bit integers. It contains no information about `i`.
+**Server 1** sees `S` — a value drawn uniformly at random from all 8-bit integers. It contains no information about `i`.
 
 **Server 2** sees `S′ = S XOR (1 << i)`. Since `S` is uniform, `S′` is also uniform (XOR with any fixed constant preserves the uniform distribution). Server 2 cannot determine `i` either.
 
