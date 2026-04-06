@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
 export default defineConfig({
-  base: '/patron-shield/',
+  base: '/crypto-lab-patron-shield/',
   build: { outDir: 'dist' }
 })
