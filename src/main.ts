@@ -21,6 +21,8 @@ type Phase = 'idle' | 'generating' | 'server1' | 'server2' | 'reconstruct' | 'do
 let currentPhase: Phase = 'idle';
 let selectedBook: number | null = null;
 
+type Theme = 'dark' | 'light';
+
 // ============================================================
 // DOM helpers
 // ============================================================
@@ -46,6 +48,36 @@ function resetAllPhases(): void {
   ['phase-generating', 'phase-server1', 'phase-server2', 'phase-reconstruct', 'phase-done']
     .forEach(id => hidePhase(id));
   showPhase('phase-idle');
+}
+
+function getCurrentTheme(): Theme {
+  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+}
+
+function updateThemeToggleButton(): void {
+  const toggleBtn = document.getElementById('theme-toggle') as HTMLButtonElement | null;
+  if (!toggleBtn) return;
+
+  const theme = getCurrentTheme();
+  toggleBtn.textContent = theme === 'dark' ? '🌙' : '☀️';
+  toggleBtn.setAttribute(
+    'aria-label',
+    theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
+  );
+}
+
+function initThemeToggle(): void {
+  const toggleBtn = document.getElementById('theme-toggle') as HTMLButtonElement | null;
+  if (!toggleBtn) return;
+
+  updateThemeToggleButton();
+
+  toggleBtn.addEventListener('click', () => {
+    const nextTheme: Theme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', nextTheme);
+    localStorage.setItem('theme', nextTheme);
+    updateThemeToggleButton();
+  });
 }
 
 // ============================================================
@@ -371,6 +403,7 @@ function runSelfAudit(): void {
 // Bootstrap
 // ============================================================
 renderCatalog();
+initThemeToggle();
 initEventListeners();
 
 // Development self-audit

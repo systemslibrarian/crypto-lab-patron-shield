@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>patron-shield — IT-PIR Library Privacy Demo</title>
     <meta name="description" content="Interactive demo of 2-server Information-Theoretic Private Information Retrieval applied to library catalog privacy. By Paul Clark." />
+    <script>
+      (function () {
+        const saved = localStorage.getItem('theme');
+        document.documentElement.setAttribute('data-theme', saved ?? 'dark');
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
@@ -14,6 +20,7 @@
 
     <!-- ===== HEADER ===== -->
     <header class="site-header" role="banner">
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light mode">🌙</button>
       <div class="header-inner">
         <div class="header-brand">
           <span class="brand-title">patron-shield</span>
@@ -280,26 +287,8 @@
     </main>
 
     <!-- ===== FOOTER ===== -->
-    <footer class="site-footer" role="contentinfo">
-      <div class="footer-inner">
-        <div class="footer-author">
-          <strong>Built by Paul Clark</strong>
-          · Systems Librarian · Leon County Public Library · Florida Librarian of the Year 2011
-        </div>
-        <div class="footer-links">
-          <a href="https://github.com/systemslibrarian/patron-shield" target="_blank" rel="noopener noreferrer">GitHub repo</a>
-          <a href="https://systemslibrarian.github.io/crypto-compare/?cat=ot_pir" target="_blank" rel="noopener noreferrer">crypto-compare OT/PIR</a>
-          <a href="https://www.ala.org/advocacy/privacy" target="_blank" rel="noopener noreferrer">ALA Privacy Principles</a>
-        </div>
-        <div class="footer-protocol">
-          Protocol: Chor, B., Goldreich, O., Kushilevitz, E., Sudan, M. (1995).
-          "Private information retrieval." <em>Proceedings of FOCS 1995</em>.
-        </div>
-        <blockquote class="footer-scripture">
-          "It is the glory of God to conceal a matter; to search out a matter is the glory of kings."
-          <cite>— Proverbs 25:2</cite>
-        </blockquote>
-      </div>
+    <footer style="text-align:center; padding: 1.5rem; font-size: 0.85rem; opacity: 0.7; margin-top: 2rem;">
+      Whether you eat or drink or whatever you do, do it all for the glory of God. — 1 Corinthians 10:31
     </footer>
 
     <script type="module" src="/src/main.ts"></script>
