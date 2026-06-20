@@ -151,6 +151,68 @@ export function renderHexBytes(
 }
 
 /**
+ * Render the correctness intuition for the reconstruct phase: a column per
+ * record that appears in either server's XOR sum. Records present in BOTH
+ * sums cancel (a ⊕ a = 0); the single record in the symmetric difference —
+ * the target — is the only survivor. This is the "why it works" of XOR
+ * reconstruction made visible.
+ */
+export function renderCancellation(
+  container: HTMLElement,
+  s1Bits: number[],
+  s2Bits: number[],
+  targetIndex: number
+): void {
+  container.innerHTML = '';
+  const union = Array.from(new Set([...s1Bits, ...s2Bits])).sort((a, b) => a - b);
+
+  const grid = document.createElement('div');
+  grid.className = 'cancel-cols';
+
+  for (const idx of union) {
+    const in1 = s1Bits.includes(idx);
+    const in2 = s2Bits.includes(idx);
+    const survives = idx === targetIndex; // the one in exactly one set
+
+    const col = document.createElement('div');
+    col.className = 'cancel-col' + (survives ? ' cancel-col-survive' : '');
+
+    const label = document.createElement('div');
+    label.className = 'cancel-label';
+    label.textContent = `db[${idx}]`;
+
+    const r1 = document.createElement('div');
+    r1.className = 'cancel-cell ' + (in1 ? 'cancel-on s1' : 'cancel-off');
+    r1.textContent = in1 ? '●' : '·';
+
+    const r2 = document.createElement('div');
+    r2.className = 'cancel-cell ' + (in2 ? 'cancel-on s2' : 'cancel-off');
+    r2.textContent = in2 ? '●' : '·';
+
+    const status = document.createElement('div');
+    status.className = 'cancel-status';
+    status.textContent = survives ? '✓ keeps' : '✕ cancels';
+
+    col.append(label, r1, r2, status);
+    grid.appendChild(col);
+  }
+
+  // Row legend on the left
+  const legend = document.createElement('div');
+  legend.className = 'cancel-legend';
+  legend.innerHTML =
+    '<div class="cancel-legend-label">&nbsp;</div>' +
+    '<div class="cancel-legend-label s1">r₁</div>' +
+    '<div class="cancel-legend-label s2">r₂</div>' +
+    '<div class="cancel-legend-label">&nbsp;</div>';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'cancel-wrap';
+  wrap.append(legend, grid);
+  container.appendChild(wrap);
+}
+
+/**
  * Reveal text character-by-character, 40ms per character.
  */
 export function animateReveal(container: HTMLElement, text: string): Promise<void> {

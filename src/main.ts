@@ -11,6 +11,7 @@ import {
   highlightBit,
   renderXORChain,
   renderHexBytes,
+  renderCancellation,
   animateReveal,
   delay,
 } from './visualizer.ts';
@@ -294,6 +295,12 @@ async function runProtocol(): Promise<void> {
 
   await delay(400);
 
+  // Show *why* the XOR collapses to the target before revealing the title.
+  renderCancellation(el('cancellation-grid'), s1Bits, s2Bits, selectedBook);
+  el('cancel-target-idx').textContent = String(selectedBook);
+
+  await delay(600);
+
   // Reveal title character by character
   const titleEl = el('title-reveal');
   await animateReveal(titleEl, result.reconstructed);
@@ -359,6 +366,31 @@ function revealCollusionDemo(): void {
   const btn = el<HTMLButtonElement>('collude-btn');
   btn.setAttribute('aria-expanded', 'true');
   btn.textContent = 'Servers colluded — query exposed';
+}
+
+// ============================================================
+// Scaling section — feel the N vs √N gap
+// ============================================================
+function initScalingSlider(): void {
+  const slider = document.getElementById('scaling-slider') as HTMLInputElement | null;
+  if (!slider) return;
+
+  const fmt = (n: number): string => n.toLocaleString('en-US');
+
+  const update = (): void => {
+    const exp = Number(slider.value);        // 1..6
+    const n = Math.pow(10, exp);             // catalog size
+    const root = Math.round(Math.sqrt(n));   // √N query (matrix scheme)
+    const factor = Math.round(n / root);     // ≈ √N shrink
+
+    el('scaling-n-label').textContent = fmt(n);
+    el('scaling-linear').textContent = fmt(n);
+    el('scaling-sqrt').textContent = fmt(root);
+    el('scaling-factor').textContent = fmt(factor);
+  };
+
+  slider.addEventListener('input', update);
+  update();
 }
 
 // ============================================================
@@ -476,6 +508,7 @@ function runSelfAudit(): void {
 // ============================================================
 renderCatalog();
 initThemeToggle();
+initScalingSlider();
 initEventListeners();
 
 // Development self-audit

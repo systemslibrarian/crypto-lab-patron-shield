@@ -865,6 +865,104 @@ strong { font-weight: 700; }
   padding-bottom: 4px;
 }
 
+/* Cancellation explainer — the "why it works" */
+.cancellation-explainer {
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cancellation-caption {
+  font-size: 0.9rem;
+  color: var(--color-text);
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.cancellation-grid {
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 14px;
+}
+
+.cancel-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  width: max-content;
+}
+
+.cancel-legend {
+  display: grid;
+  grid-template-rows: auto auto auto auto;
+  gap: 6px;
+  text-align: right;
+}
+
+.cancel-legend-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 22px;
+}
+.cancel-legend-label.s1 { color: var(--color-s1); }
+.cancel-legend-label.s2 { color: var(--color-s2); }
+
+.cancel-cols {
+  display: flex;
+  gap: 6px;
+}
+
+.cancel-col {
+  display: grid;
+  grid-template-rows: auto auto auto auto;
+  gap: 6px;
+  padding: 6px 4px;
+  border-radius: var(--radius-sm);
+  min-width: 52px;
+  text-align: center;
+}
+
+.cancel-col-survive {
+  background: var(--color-teal-dim);
+  box-shadow: 0 0 0 1px var(--color-teal-20);
+}
+
+.cancel-label {
+  font-size: 0.7rem;
+  color: var(--color-muted);
+}
+
+.cancel-cell {
+  font-size: 0.95rem;
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cancel-cell.s1 { color: var(--color-s1); }
+.cancel-cell.s2 { color: var(--color-s2); }
+.cancel-off { color: var(--color-muted); opacity: 0.4; }
+
+.cancel-status {
+  font-size: 0.6rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+.cancel-col-survive .cancel-status {
+  color: var(--color-teal);
+  font-weight: 700;
+}
+.cancel-col-survive .cancel-label { color: var(--color-teal); }
+
+.cancellation-note {
+  font-size: 0.84rem;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
 .title-reveal-area {
   text-align: center;
 }
@@ -1134,6 +1232,184 @@ strong { font-weight: 700; }
   font-size: 0.85rem;
   color: var(--color-muted);
   line-height: 1.6;
+}
+
+/* ============================================================
+   SCALING — the √N trick
+   ============================================================ */
+.section-scaling {
+  border-bottom: 1px solid var(--color-border);
+  background: radial-gradient(ellipse at 80% 30%, rgba(0, 212, 184, 0.03) 0%, transparent 55%);
+}
+
+.scaling-explainer {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 36px;
+  align-items: center;
+  margin-bottom: 36px;
+}
+
+/* Matrix diagram */
+.matrix-diagram {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-areas:
+    "clabel clabel"
+    "cmask  ."
+    "body   rlabel";
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.matrix-colmask-label {
+  grid-area: clabel;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--color-muted);
+}
+
+.matrix-colmask {
+  grid-area: cmask;
+  display: grid;
+  grid-template-columns: repeat(4, 28px);
+  gap: 6px;
+}
+
+.mb {
+  width: 28px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.mb-off { background: var(--color-bit-0); color: var(--color-muted); }
+.mb-on  { background: var(--color-s1); color: var(--color-bg); }
+
+.matrix-body { grid-area: body; display: flex; align-items: center; gap: 8px; }
+
+.matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 28px);
+  grid-template-rows: repeat(4, 28px);
+  gap: 6px;
+}
+
+.mcell {
+  width: 28px;
+  height: 28px;
+  border-radius: 3px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-card-border);
+}
+.mcell.col-sel {
+  background: var(--color-s1-dim);
+  border-color: var(--color-s1);
+}
+.mcell.target {
+  background: var(--color-teal-dim);
+  box-shadow: 0 0 0 2px var(--color-teal);
+  position: relative;
+}
+
+.matrix-rowout {
+  display: grid;
+  grid-template-rows: repeat(4, 28px);
+  gap: 6px;
+}
+.ro {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+.ro.target-row { color: var(--color-teal); font-weight: 700; }
+
+.matrix-rowout-label {
+  grid-area: rlabel;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--color-muted);
+}
+
+.scaling-text { grid-area: auto; }
+.scaling-text p {
+  font-size: 0.92rem;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+.scaling-text p:last-child { margin-bottom: 0; }
+
+/* Interactive slider */
+.scaling-interactive {
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+}
+
+.scaling-slider-row { margin-bottom: 20px; }
+
+.scaling-slider-label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  margin-bottom: 12px;
+}
+
+.scaling-slider {
+  width: 100%;
+  accent-color: var(--color-teal);
+  cursor: pointer;
+}
+
+.scaling-readout {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.scaling-stat {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  text-align: center;
+}
+
+.scaling-stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.scaling-stat-val {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.scaling-unit {
+  font-size: 0.7rem;
+  color: var(--color-muted);
+  font-weight: 400;
+}
+
+@media (max-width: 767px) {
+  .scaling-explainer {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    justify-items: center;
+  }
+  .scaling-text { text-align: left; }
+  .scaling-readout { grid-template-columns: 1fr; }
 }
 
 /* ============================================================

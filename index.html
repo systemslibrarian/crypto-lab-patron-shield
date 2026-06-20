@@ -238,6 +238,20 @@
                   <div id="recon-result-hex" class="response-hex"></div>
                 </div>
               </div>
+
+              <!-- Why the XOR works: shared terms cancel, only db[i] survives -->
+              <div class="cancellation-explainer">
+                <div class="cancellation-caption">
+                  Why it works: every record sits in <em>both</em> sums except yours.
+                </div>
+                <div id="cancellation-grid" class="cancellation-grid mono" aria-hidden="true"></div>
+                <div class="cancellation-note">
+                  Identical terms cancel — <span class="mono">a ⊕ a = 0</span> — so the whole shared
+                  part vanishes. Only <span class="teal mono">db[<span id="cancel-target-idx"></span>]</span>,
+                  which appears on a single side, survives. That survivor <em>is</em> your book.
+                </div>
+              </div>
+
               <div class="title-reveal-area" aria-live="assertive">
                 <div class="title-reveal-label">Retrieved title:</div>
                 <div id="title-reveal" class="title-reveal mono"></div>
@@ -353,6 +367,87 @@
             In a naive catalog query, the server logs your search term.
             With PIR, the server only sees a cryptographic mask — indistinguishable from random noise.
           </p>
+        </div>
+      </section>
+
+      <!-- ===== SCALING: THE √N TRICK ===== -->
+      <section id="scaling" class="section-scaling" aria-labelledby="scaling-heading">
+        <div class="section-inner">
+          <h2 id="scaling-heading" class="section-title">How PIR scales — the √N trick</h2>
+          <p class="section-subtitle">
+            The query above carries one bit per record. Here is how it stays small as the catalog grows.
+          </p>
+
+          <div class="scaling-explainer">
+            <div class="matrix-diagram" aria-hidden="true">
+              <div class="matrix-colmask-label">column mask → <span class="mono">√N bits</span></div>
+              <div class="matrix-colmask">
+                <span class="mb mb-off">0</span>
+                <span class="mb mb-off">0</span>
+                <span class="mb mb-on">1</span>
+                <span class="mb mb-off">0</span>
+              </div>
+              <div class="matrix-body">
+                <div class="matrix-grid">
+                  <!-- 4×4 grid; column index 2 (0-based) is the selected column, target at row 1 -->
+                  <span class="mcell"></span><span class="mcell"></span><span class="mcell col-sel"></span><span class="mcell"></span>
+                  <span class="mcell"></span><span class="mcell"></span><span class="mcell col-sel target"></span><span class="mcell"></span>
+                  <span class="mcell"></span><span class="mcell"></span><span class="mcell col-sel"></span><span class="mcell"></span>
+                  <span class="mcell"></span><span class="mcell"></span><span class="mcell col-sel"></span><span class="mcell"></span>
+                </div>
+                <div class="matrix-rowout" aria-hidden="true">
+                  <span class="ro">↦</span><span class="ro target-row">↦</span><span class="ro">↦</span><span class="ro">↦</span>
+                </div>
+              </div>
+              <div class="matrix-rowout-label">row parities ↓ <span class="mono">√N out</span></div>
+            </div>
+
+            <div class="scaling-text">
+              <p>
+                This demo sends an <strong>N-bit</strong> mask — one bit per record. Fine for 8 books;
+                a million-record catalog would mean a million-bit query.
+              </p>
+              <p>
+                Instead, arrange the catalog as a <strong>√N × √N</strong> grid. To fetch the record at
+                (row <span class="mono">r</span>, column <span class="mono">c</span>), send each server a
+                <strong>√N-bit column mask</strong> — the two masks differing in only column <span class="mono">c</span>.
+                Each server returns one parity per <em>row</em> (√N values); XOR the two replies to rebuild the
+                entire target column, then read row <span class="mono">r</span>.
+              </p>
+              <p>
+                Same information-theoretic privacy, same non-collusion assumption — but the query shrinks from
+                <strong class="danger-color">N</strong> to <strong class="teal">√N</strong>. The servers see only a
+                random column subset, so <span class="mono">c</span> stays hidden, and <span class="mono">r</span>
+                is never transmitted. That sublinear cost is why two-server PIR is a landmark result, not just a
+                privacy trick.
+              </p>
+            </div>
+          </div>
+
+          <div class="scaling-interactive">
+            <div class="scaling-slider-row">
+              <label for="scaling-slider" class="scaling-slider-label">
+                Catalog size: <output id="scaling-n-label" class="mono teal">10,000</output> records
+              </label>
+              <input id="scaling-slider" class="scaling-slider" type="range"
+                     min="1" max="6" value="4" step="1"
+                     aria-label="Catalog size, powers of ten" />
+            </div>
+            <div class="scaling-readout">
+              <div class="scaling-stat">
+                <div class="scaling-stat-label danger-color">1-D query (this demo)</div>
+                <div class="scaling-stat-val mono"><span id="scaling-linear">10,000</span> <span class="scaling-unit">bits</span></div>
+              </div>
+              <div class="scaling-stat">
+                <div class="scaling-stat-label teal">√N matrix query</div>
+                <div class="scaling-stat-val mono"><span id="scaling-sqrt">100</span> <span class="scaling-unit">bits</span></div>
+              </div>
+              <div class="scaling-stat">
+                <div class="scaling-stat-label">Query shrinks by</div>
+                <div class="scaling-stat-val mono"><span id="scaling-factor">100</span>×</div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
