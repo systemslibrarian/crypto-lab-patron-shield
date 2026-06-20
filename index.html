@@ -50,7 +50,7 @@
             <div class="hero-paragraphs">
               <p>Every time you search a library catalog, the server learns what you looked for. Your reading interests — medical diagnoses, political views, personal struggles — are logged and potentially exposed.</p>
               <p>Private Information Retrieval solves this. You retrieve exactly what you want from a database — and the server learns <em>nothing</em> about which item you chose.</p>
-              <p>This demo implements the 1995 Chor et al. two-server IT-PIR protocol. The privacy guarantee is <strong>information-theoretic</strong> — not computational. No assumptions about server computing power are required. It is provably private.</p>
+              <p>This demo implements the 1995 Chor et al. two-server IT-PIR protocol. The privacy guarantee is <strong>information-theoretic</strong> — not computational. No assumptions about server computing power are required. It is provably private, on one condition: the two servers <strong>must not collude</strong>. Run a query below, then trigger the collusion attack to see exactly why.</p>
             </div>
           </div>
           <div class="hero-diagram" aria-label="Protocol diagram">
@@ -83,6 +83,32 @@
                 <span class="diagram-xor-eq">r₁ ⊕ r₂ = <span class="teal">book[i]</span></span>
                 <span class="diagram-sub">information-theoretically private</span>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Why two servers? — the motivation -->
+        <div class="hero-why">
+          <h2 class="hero-why-q">Why two servers?</h2>
+          <p class="hero-why-lead">
+            Hiding <em>which</em> record you want looks impossible with one server. The only
+            information-theoretic way to keep a single server from learning your query is to
+            download the <strong>entire</strong> database every time. PIR's trick is to split the
+            work across two servers — so you transfer one record's worth of data, each server
+            learns nothing, and the only cost is a trust assumption.
+          </p>
+          <div class="why-cards">
+            <div class="why-card why-card-bad">
+              <div class="why-card-head danger-color">One server · stay cheap</div>
+              <div class="why-card-body">You send your exact query. The server returns one record — and logs what you read. <strong>No privacy.</strong></div>
+            </div>
+            <div class="why-card why-card-bad">
+              <div class="why-card-head danger-color">One server · stay private</div>
+              <div class="why-card-body">Download the <strong>whole</strong> database and pick locally. Private, but the bandwidth cost scales with the entire catalog. <strong>Impractical.</strong></div>
+            </div>
+            <div class="why-card why-card-good">
+              <div class="why-card-head teal">Two servers · IT-PIR</div>
+              <div class="why-card-body">Send each a random-looking mask, XOR the two replies. Cheap <em>and</em> private — <strong>as long as they don't collude.</strong></div>
             </div>
           </div>
         </div>
@@ -215,7 +241,7 @@
               <div class="title-reveal-area" aria-live="assertive">
                 <div class="title-reveal-label">Retrieved title:</div>
                 <div id="title-reveal" class="title-reveal mono"></div>
-                <div id="correctness-badge" class="correctness-badge" style="display:none">✓ Privacy preserved</div>
+                <div id="correctness-badge" class="correctness-badge" style="display:none">✓ Correct — r₁ ⊕ r₂ rebuilt the exact book</div>
               </div>
             </div>
           </div>
@@ -241,9 +267,55 @@
               </div>
             </div>
             <p class="privacy-conclusion">
-              Neither server saw your query. Both received cryptographically random-looking masks.
-              The book you retrieved — <strong id="final-book-title" class="teal"></strong> — remains private.
+              Neither server <em>alone</em> saw your query. Both received cryptographically random-looking masks.
+              The book you retrieved — <strong id="final-book-title" class="teal"></strong> — stays private
+              <strong>as long as the two servers don't pool what they received</strong>.
             </p>
+
+            <!-- The trust assumption: non-collusion -->
+            <div class="collusion-block">
+              <div class="collusion-head">
+                <span class="collusion-icon" aria-hidden="true">⚠</span>
+                <span>The one assumption: the servers must not collude</span>
+              </div>
+              <p class="collusion-intro">
+                The two masks are not independent — by construction
+                <span class="mono">S′ = S ⊕ {i}</span>, so they differ in exactly one bit: yours.
+                Any party holding <em>both</em> masks recovers your query with a single XOR.
+                That is the entire price of two-server PIR: you trade the cost of downloading the
+                whole database for the assumption that <strong>at least one server is honest</strong>.
+              </p>
+              <button id="collude-btn" class="btn btn-danger" aria-expanded="false" aria-controls="collusion-attack">
+                Simulate the servers colluding →
+              </button>
+
+              <div id="collusion-attack" class="collusion-attack" hidden>
+                <div class="collusion-xor-row mono">
+                  <div class="collusion-operand">
+                    <span class="collusion-operand-label server1-color">S (Server 1)</span>
+                    <code id="collude-s1" class="collusion-mask server1-color"></code>
+                  </div>
+                  <span class="collusion-op" aria-hidden="true">⊕</span>
+                  <div class="collusion-operand">
+                    <span class="collusion-operand-label server2-color">S′ (Server 2)</span>
+                    <code id="collude-s2" class="collusion-mask server2-color"></code>
+                  </div>
+                  <span class="collusion-op" aria-hidden="true">=</span>
+                  <div class="collusion-operand">
+                    <span class="collusion-operand-label danger-color">S ⊕ S′</span>
+                    <code id="collude-diff" class="collusion-mask danger-color"></code>
+                  </div>
+                </div>
+                <p class="collusion-verdict">
+                  One bit survives: position <span class="danger-color mono" id="collude-bit"></span>.
+                  Colluding servers learn instantly that you asked for
+                  <strong class="danger-color" id="collude-title"></strong>. Privacy is gone.
+                  This is why the threat model requires the servers to be operated by
+                  <strong>independent, non-colluding parties</strong>.
+                </p>
+              </div>
+            </div>
+
             <div class="phase-actions">
               <button id="run-again-btn" class="btn btn-secondary">Run again →</button>
               <button id="new-book-btn" class="btn btn-outline">Query a different book →</button>

@@ -340,6 +340,66 @@ strong { font-weight: 700; }
   display: block;
 }
 
+/* Why two servers? — motivation block */
+.hero-why {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 20px 48px;
+}
+
+.hero-why-q {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+
+.hero-why-lead {
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  max-width: 720px;
+  margin-bottom: 24px;
+}
+
+.why-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.why-card {
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+}
+
+.why-card-bad { border-color: rgba(255, 74, 74, 0.25); }
+.why-card-good {
+  border-color: rgba(0, 212, 184, 0.35);
+  background: var(--color-teal-dim);
+}
+
+.why-card-head {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.why-card-body {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+@media (max-width: 767px) {
+  .why-cards { grid-template-columns: 1fr; }
+}
+
 /* ============================================================
    CATALOG
    ============================================================ */
@@ -497,6 +557,19 @@ strong { font-weight: 700; }
 .btn-outline:hover:not(:disabled) {
   color: var(--color-text);
   border-color: var(--color-border);
+}
+
+.btn-danger {
+  background: rgba(255, 74, 74, 0.12);
+  color: var(--color-danger);
+  border: 1px solid rgba(255, 74, 74, 0.4);
+}
+.btn-danger:hover:not(:disabled) {
+  background: rgba(255, 74, 74, 0.22);
+  border-color: var(--color-danger);
+}
+.btn-danger[aria-expanded='true'] {
+  background: rgba(255, 74, 74, 0.18);
 }
 
 /* ============================================================
@@ -879,6 +952,89 @@ strong { font-weight: 700; }
   flex-wrap: wrap;
 }
 
+/* Collusion / non-collusion threat model */
+.collusion-block {
+  border: 1px solid rgba(255, 74, 74, 0.28);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 74, 74, 0.05);
+  padding: 20px 22px;
+  margin-bottom: 24px;
+}
+
+.collusion-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-danger);
+  margin-bottom: 10px;
+}
+
+.collusion-icon { flex-shrink: 0; }
+
+.collusion-intro {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+
+.collusion-attack {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px dashed rgba(255, 74, 74, 0.3);
+  animation: phaseReveal 300ms ease-out both;
+}
+
+.collusion-xor-row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.collusion-operand {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.collusion-operand-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.collusion-mask {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  background: var(--color-code-bg);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.collusion-op {
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-danger);
+  padding-bottom: 6px;
+}
+
+.collusion-verdict {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+  padding: 14px 16px;
+  background: rgba(255, 74, 74, 0.08);
+  border: 1px solid rgba(255, 74, 74, 0.25);
+  border-radius: var(--radius-md);
+}
+
 /* ============================================================
    COMPARISON SECTION
    ============================================================ */
@@ -1103,6 +1259,26 @@ strong { font-weight: 700; }
 @media (min-width: 768px) {
   .hero-inner {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ============================================================
+   REDUCED MOTION — honor the OS accessibility preference
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .bit-square { opacity: 1 !important; }
+
+  .book-card:hover,
+  .btn-primary:hover:not(:disabled) {
+    transform: none;
   }
 }
 

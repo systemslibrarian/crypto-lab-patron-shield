@@ -4,7 +4,8 @@
  */
 
 import { CATALOG, DATABASE, DB_SIZE } from './catalog.ts';
-import { runFullPIR, getSetBits } from './pir.ts';
+import { runFullPIR, getSetBits, recoverByCollusion } from './pir.ts';
+import type { PIRResult } from './types.ts';
 import {
   renderBitmask,
   highlightBit,
@@ -20,6 +21,10 @@ import {
 type Phase = 'idle' | 'generating' | 'server1' | 'server2' | 'reconstruct' | 'done';
 let currentPhase: Phase = 'idle';
 let selectedBook: number | null = null;
+// Most recent completed run — drives the collusion-attack demonstration.
+let lastResult: PIRResult | null = null;
+// Guards against overlapping protocol animations (rapid clicks / mid-run selection).
+let isRunning = false;
 
 type Theme = 'dark' | 'light';
 
@@ -128,6 +133,9 @@ function renderCatalog(): void {
 }
 
 function selectBook(id: number): void {
+  // Ignore selection changes while an animation is in flight — otherwise the
+  // running sequence and the reset below race over the same DOM.
+  if (isRunning) return;
   selectedBook = id;
 
   // Update card highlight
@@ -173,6 +181,21 @@ async function flashCards(indices: number[], serverClass: string): Promise<void>
 // ============================================================
 // Main protocol animation sequence
 // ============================================================
+/**
+ * Entry point for the two run triggers. Holds the re-entrancy lock and
+ * guarantees it is released — and the query button re-enabled — even if the
+ * animation throws partway through.
+ */
+function startRun(): void {
+  if (selectedBook === null || isRunning) return;
+  isRunning = true;
+  runProtocol().finally(() => {
+    isRunning = false;
+    const btn = document.getElementById('query-btn') as HTMLButtonElement | null;
+    if (btn) btn.disabled = false;
+  });
+}
+
 async function runProtocol(): Promise<void> {
   if (selectedBook === null) return;
 
@@ -196,8 +219,12 @@ async function runProtocol(): Promise<void> {
   resetAllPhases();
   hidePhase('phase-idle');
 
+  // Collapse any prior collusion demonstration before the new run
+  resetCollusionDemo();
+
   // Run the full PIR computation
   const result = runFullPIR(DATABASE, selectedBook);
+  lastResult = result;
 
   const { query, response1, response2 } = result;
   const s1Bits = getSetBits(query.maskS);
@@ -301,11 +328,56 @@ async function runProtocol(): Promise<void> {
 }
 
 // ============================================================
+// Collusion attack demonstration
+// ============================================================
+const hexMask = (m: number): string =>
+  '0x' + (m >>> 0).toString(16).padStart(Math.ceil(DB_SIZE / 4), '0');
+
+function resetCollusionDemo(): void {
+  const panel = document.getElementById('collusion-attack');
+  const btn = document.getElementById('collude-btn') as HTMLButtonElement | null;
+  if (panel) panel.hidden = true;
+  if (btn) {
+    btn.setAttribute('aria-expanded', 'false');
+    btn.textContent = 'Simulate the servers colluding →';
+  }
+}
+
+function revealCollusionDemo(): void {
+  if (!lastResult) return;
+  const { maskS, maskSPrime } = lastResult.query;
+  const recovered = recoverByCollusion(maskS, maskSPrime);
+
+  el('collude-s1').textContent = hexMask(maskS);
+  el('collude-s2').textContent = hexMask(maskSPrime);
+  el('collude-diff').textContent = hexMask(maskS ^ maskSPrime);
+  el('collude-bit').textContent = `[${recovered}]`;
+  el('collude-title').textContent =
+    recovered >= 0 ? `"${CATALOG[recovered].title}"` : '(unknown)';
+
+  el('collusion-attack').hidden = false;
+  const btn = el<HTMLButtonElement>('collude-btn');
+  btn.setAttribute('aria-expanded', 'true');
+  btn.textContent = 'Servers colluded — query exposed';
+}
+
+// ============================================================
 // Event listeners
 // ============================================================
 function initEventListeners(): void {
+  // Collusion attack toggle
+  el('collude-btn').addEventListener('click', () => {
+    const panel = el('collusion-attack');
+    if (panel.hidden) {
+      revealCollusionDemo();
+    } else {
+      resetCollusionDemo();
+    }
+  });
+
   // Catalog toggle
   el('catalog-toggle-btn').addEventListener('click', () => {
+    if (isRunning) return; // don't re-render the grid out from under a running animation
     catalogExpanded = !catalogExpanded;
     const prevSelected = selectedBook;
     renderCatalog();
@@ -317,22 +389,15 @@ function initEventListeners(): void {
   });
 
   // Query button
-  el('query-btn').addEventListener('click', () => {
-    if (selectedBook !== null) {
-      void runProtocol();
-    }
-  });
+  el('query-btn').addEventListener('click', startRun);
 
   // Run again
-  el('run-again-btn').addEventListener('click', () => {
-    if (selectedBook !== null) {
-      void runProtocol();
-    }
-  });
+  el('run-again-btn').addEventListener('click', startRun);
 
   // Query different book
   el('new-book-btn').addEventListener('click', () => {
     resetAllPhases();
+    resetCollusionDemo();
     currentPhase = 'idle';
     document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
   });
@@ -380,6 +445,13 @@ function runSelfAudit(): void {
     const expected = 1 << i;
     if (xorCheck !== expected) {
       console.error(`[patron-shield AUDIT FAIL] index ${i}: maskS ^ maskSPrime = ${xorCheck}, expected ${expected}`);
+      allPassed = false;
+    }
+    // Verify the collusion attack recovers exactly the queried index —
+    // the concrete failure the non-collusion assumption is there to prevent.
+    const recovered = recoverByCollusion(r.query.maskS, r.query.maskSPrime);
+    if (recovered !== i) {
+      console.error(`[patron-shield AUDIT FAIL] index ${i}: collusion recovered ${recovered}, expected ${i}`);
       allPassed = false;
     }
   }

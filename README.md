@@ -12,7 +12,7 @@ This project is a browser demo of Two-Server Information-Theoretic Private Infor
 ## 3. Live Demo
 Live GitHub Pages demo: https://systemslibrarian.github.io/crypto-lab-patron-shield/
 
-In the demo, you can choose a catalog title, run a private query, and watch each step of IT-PIR execution from mask generation through response reconstruction. You can also switch between the naive query view and PIR view to compare what a server learns in each model. Controls include book selection, catalog show-all toggle, query execution buttons, and the naive/PIR comparison toggle.
+In the demo, you can choose a catalog title, run a private query, and watch each step of IT-PIR execution from mask generation through response reconstruction. After a run, the privacy analysis makes the protocol's one trust assumption explicit — the two servers must not collude — and lets you trigger a **collusion attack** that XORs the two query masks (`S ⊕ S′ = {i}`) to recover your exact book, showing precisely what the non-collusion assumption protects. You can also switch between the naive query view and PIR view to compare what a server learns in each model. Controls include book selection, catalog show-all toggle, query execution buttons, the collusion-attack toggle, and the naive/PIR comparison toggle.
 
 ## 4. How to Run Locally
 ```bash

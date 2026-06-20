@@ -6,6 +6,15 @@
 import type { Book } from './types.ts';
 
 /**
+ * True when the user has asked the OS to minimize animation.
+ * Evaluated live so a mid-session preference change is respected.
+ */
+export function prefersReducedMotion(): boolean {
+  return typeof matchMedia === 'function'
+    && matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/**
  * Render an N-bit mask as a grid of bit squares.
  * Each square is 14×14px; 0-bits are dark, 1-bits use the provided color.
  * If animateIn=true, each square fades in with a staggered delay.
@@ -23,6 +32,8 @@ export function renderBitmask(
   const grid = document.createElement('div');
   grid.className = 'bit-grid';
 
+  const stagger = animateIn && !prefersReducedMotion();
+
   for (let i = 0; i < numBits; i++) {
     const bit = (mask >>> i) & 1;
     const sq = document.createElement('div');
@@ -33,7 +44,7 @@ export function renderBitmask(
       sq.style.background = color;
     }
 
-    if (animateIn) {
+    if (stagger) {
       sq.style.opacity = '0';
       sq.style.animationName = 'bitAppear';
       sq.style.animationDuration = '80ms';
@@ -144,6 +155,10 @@ export function renderHexBytes(
  */
 export function animateReveal(container: HTMLElement, text: string): Promise<void> {
   container.textContent = '';
+  if (prefersReducedMotion()) {
+    container.textContent = text;
+    return Promise.resolve();
+  }
   return new Promise(resolve => {
     let i = 0;
     const tick = () => {
@@ -160,8 +175,11 @@ export function animateReveal(container: HTMLElement, text: string): Promise<voi
 }
 
 /**
- * Simple delay helper.
+ * Delay helper. Collapses to a near-instant tick when the user prefers reduced
+ * motion, so motion-sensitive users get the full result without the long
+ * step-by-step pacing while the phase sequencing still runs in order.
  */
 export function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  const effective = prefersReducedMotion() ? Math.min(ms, 10) : ms;
+  return new Promise(resolve => setTimeout(resolve, effective));
 }

@@ -29,6 +29,14 @@
  *   preserves the uniform distribution). Neither server alone can determine i.
  *   The privacy guarantee is INFORMATION-THEORETIC: it holds regardless of
  *   server computational power.
+ *
+ * TRUST ASSUMPTION — NON-COLLUSION (this is the whole catch):
+ *   Privacy holds ONLY if the two servers do not pool their queries. The masks
+ *   satisfy S ⊕ S' = (1 << i) by construction, so any party that sees BOTH masks
+ *   recovers the target index i with a single XOR (see recoverByCollusion below).
+ *   Two-server IT-PIR therefore trades the "download the whole database" cost of
+ *   single-server private retrieval for a weaker, but practical, trust assumption:
+ *   at least one of the two servers is honest.
  * -----------------------------------------------------------------------
  */
 
@@ -143,4 +151,20 @@ export function getSetBits(mask: number): number[] {
     if ((mask >>> j) & 1) bits.push(j);
   }
   return bits;
+}
+
+/**
+ * The collusion attack: given BOTH server masks, recover the target index.
+ * Because S' = S ⊕ (1 << i), we have S ⊕ S' = (1 << i), so a single XOR
+ * exposes the one differing bit — and therefore exactly which book was queried.
+ * This is precisely what the non-colluding-servers assumption prevents.
+ *
+ * Returns the recovered target index, or -1 if the masks differ in zero or
+ * more than one bit (which a correct protocol run never produces).
+ */
+export function recoverByCollusion(maskS: number, maskSPrime: number): number {
+  const diff = maskS ^ maskSPrime;
+  // A valid query pair differs in exactly one bit — diff must be a power of two.
+  if (diff === 0 || (diff & (diff - 1)) !== 0) return -1;
+  return Math.log2(diff);
 }
