@@ -3,9 +3,10 @@ import { expect, test, type Page } from '@playwright/test';
 
 /**
  * WCAG regression gate. Deploys are already gated on the PIR correctness
- * self-audit; this gates them on accessibility the same way. Scans the full
- * page with every collapsible/panel expanded and the live PIR demo driven, in
- * both themes.
+ * self-audit (the vitest suite in src/pir.test.ts, run via `npm test` in the
+ * deploy workflow before the build); this gates them on accessibility the same
+ * way. Scans the full page with every collapsible/panel expanded and the live
+ * PIR demo driven, in both themes.
  */
 
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];

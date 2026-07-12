@@ -537,6 +537,14 @@
                 is never transmitted. That sublinear cost is why two-server PIR is a landmark result, not just a
                 privacy trick.
               </p>
+              <p class="scaling-impl-note">
+                <strong>Implementation note:</strong> this demo packs each query mask into a single 32-bit integer,
+                so its live 1-D protocol is capped at <span class="mono">DB_SIZE&nbsp;≤&nbsp;32</span> records (the
+                catalog here is 8). That ceiling is a JavaScript-number convenience, not a property of PIR — the
+                O(n)-communication scaling lesson above is illustrated with the √N slider rather than by actually
+                growing the live database. A production implementation would use a bit-vector or the √N matrix
+                layout to reach realistic catalog sizes.
+              </p>
             </div>
           </div>
 

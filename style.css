@@ -1347,6 +1347,11 @@ strong { font-weight: 700; }
   margin-bottom: 14px;
 }
 .scaling-text p:last-child { margin-bottom: 0; }
+.scaling-text p.scaling-impl-note {
+  border-left: 3px solid var(--color-border);
+  padding-left: 12px;
+  font-size: 0.86rem;
+}
 
 /* Interactive slider */
 .scaling-interactive {

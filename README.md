@@ -41,6 +41,44 @@ npm install
 npm run dev
 ```
 
+## Tests / Verification
+
+Prove the crypto yourself — don't take the README's word for it.
+
+```bash
+npm test        # PIR correctness self-audit (vitest, src/pir.test.ts)
+npm run build   # tsc type-check + production bundle
+npm run test:a11y   # WCAG A/AA gate (Playwright + axe-core, both themes)
+```
+
+`npm test` runs the unit suite that backs every claim on this page:
+
+- **Correctness (known-answer test).** For every catalog index, `r1 ⊕ r2`
+  reconstructs the exact stored title — checked across 500 random masks and for
+  **both** cases of the reconstruction proof (target bit set vs. clear).
+- **Privacy by construction.** The two query masks differ in **exactly one** bit,
+  and that bit is the target index (`S ⊕ S′ = 1 << i`); masks stay within
+  `DB_SIZE` bits and are freshly random each run.
+- **The collusion attack really works.** `recoverByCollusion` recovers exactly
+  the queried index from both masks (100 trials/index), and correctly returns
+  `-1` for inputs that are not a valid one-bit-differing query pair — i.e. the
+  attack the non-collusion assumption is there to prevent.
+- **Oracle linearity + plumbing.** `runServer` behaves as a linear XOR oracle
+  (single-bit mask returns exactly that record; `server(m1) ⊕ server(m2) =
+  server(m1 ⊕ m2)`), `xorBytes` is self-inverse, and records encode to a fixed
+  64-byte layout.
+
+CI (`.github/workflows/deploy.yml`) runs `npm test` **before** the build, so a
+broken protocol blocks the deploy — the accessibility gate then runs the same
+way.
+
+**Implementation limit (honest disclosure):** the live 1-D protocol packs each
+query mask into a single 32-bit integer, so it is capped at `DB_SIZE ≤ 32`
+records (the catalog here is 8). That is a JavaScript-number convenience, not a
+property of PIR. The O(n)-communication scaling lesson is therefore *illustrated*
+by the √N slider in the app rather than by growing the live database; a
+production build would use a bit-vector or the √N matrix layout.
+
 ## Related Demos
 
 - [crypto-lab-oblivious-shelf](https://systemslibrarian.github.io/crypto-lab-oblivious-shelf/) — sibling 2-server IT-PIR demo with a step-by-step privacy audit.

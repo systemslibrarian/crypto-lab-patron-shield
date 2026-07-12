@@ -24,6 +24,8 @@ jobs:
           node-version: lts/*
           cache: npm
       - run: npm install
+      - name: PIR correctness self-audit (vitest unit tests)
+        run: npm test
       - run: npm run build
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
