@@ -158,11 +158,23 @@
 
     <main id="main-content">
 
+      <header class="cl-hero">
+        <div class="cl-hero-main">
+          <h1 class="cl-hero-title">Patron Shield</h1>
+          <p class="cl-hero-sub">2-Server IT-PIR · Chor et al. 1995</p>
+          <p class="cl-hero-desc">Retrieve one book from a catalog by sending each of two servers a random XOR mask that differ in exactly one bit, then XOR the replies to rebuild the record neither server could identify.</p>
+        </div>
+        <aside class="cl-hero-why" aria-label="Why it matters">
+          <span class="cl-hero-why-label">WHY IT MATTERS</span>
+          <p class="cl-hero-why-text">Every catalog search you run is logged, exposing your medical, political, and personal reading interests. Information-theoretic PIR hides which record you fetched with no assumptions about server compute — provably private as long as the two servers never collude.</p>
+        </aside>
+      </header>
+
       <!-- ===== HERO / EXPLAINER ===== -->
       <section id="hero" class="section-hero" aria-labelledby="hero-heading">
         <div class="hero-inner">
           <div class="hero-text">
-            <h1 id="hero-heading" class="hero-title">Private Information<br/>Retrieval</h1>
+            <h2 id="hero-heading" class="hero-title">Private Information<br/>Retrieval</h2>
             <div class="hero-paragraphs">
               <p>Every time you search a library catalog, the server learns what you looked for. Your reading interests — medical diagnoses, political views, personal struggles — are logged and potentially exposed.</p>
               <p>Private Information Retrieval solves this. You retrieve exactly what you want from a database — and the server learns <em>nothing</em> about which item you chose.</p>
