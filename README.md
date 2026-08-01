@@ -27,10 +27,10 @@ In the demo, you can choose a catalog title, run a private query, and watch each
 
 ## Real-World Usage
 
-- **RAID-PIR (Devet and Goldberg, 2014):** makes multi-server IT-PIR practical over databases with millions of records using RAID-style XOR parity.
+- **RAID-PIR (Demmler, Herzberg, and Schneider, CCSW 2014):** makes multi-server IT-PIR practical over databases with millions of records using RAID-style XOR parity.
 - **Percy++ (Ian Goldberg, University of Waterloo):** an open-source reference library implementing IT-PIR and computational PIR, used in privacy research.
 - **PIR-Tor (Mittal et al., 2011):** proposes IT-PIR so Tor clients can fetch relay descriptors without revealing which relays they intend to use.
-- **Checklist (Henry and Goldberg, 2013):** a privacy-preserving messaging system built on IT-PIR for reading bulletin-board messages without revealing which.
+- **Checklist (Kogan and Corrigan-Gibbs, USENIX Security 2021):** private blocklist lookups — a two-server PIR protocol lets a browser check a URL against Google's Safe Browsing list without revealing the URL.
 
 ## How to Run Locally
 
