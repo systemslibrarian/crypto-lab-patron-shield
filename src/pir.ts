@@ -76,11 +76,12 @@ export function generateQuery(targetIndex: number): PIRQuery {
 
   const rand = new Uint32Array(1);
   crypto.getRandomValues(rand);
-  // Mask to DB_SIZE bits so only valid bit positions are used
-  const maskS = rand[0] & ((1 << DB_SIZE) - 1);
+  // Mask to DB_SIZE bits so only valid bit positions are used. JavaScript
+  // shifts wrap at 32, so `(1 << 32) - 1` is zero rather than 0xffffffff.
+  const maskS = (rand[0] & lowBitsMask(DB_SIZE)) >>> 0;
 
   // Flip exactly bit targetIndex to produce S'
-  const maskSPrime = maskS ^ (1 << targetIndex);
+  const maskSPrime = (maskS ^ (1 << targetIndex)) >>> 0;
 
   return {
     targetIndex,
@@ -88,6 +89,14 @@ export function generateQuery(targetIndex: number): PIRQuery {
     maskSPrime,
     differingBit: targetIndex,
   };
+}
+
+/** Return an unsigned mask with the lowest `bitCount` bits set. */
+export function lowBitsMask(bitCount: number): number {
+  if (!Number.isInteger(bitCount) || bitCount < 0 || bitCount > 32) {
+    throw new Error(`lowBitsMask: bitCount ${bitCount} out of range [0,32]`);
+  }
+  return bitCount === 32 ? 0xffffffff : (2 ** bitCount - 1) >>> 0;
 }
 
 /**

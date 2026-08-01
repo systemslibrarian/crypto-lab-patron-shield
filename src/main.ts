@@ -89,7 +89,7 @@ function initThemeToggle(): void {
 // ============================================================
 // Catalog rendering
 // ============================================================
-const PREVIEW_COUNT = 8;
+const PREVIEW_COUNT = 4;
 let catalogExpanded = false;
 
 function renderCatalog(): void {

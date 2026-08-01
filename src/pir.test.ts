@@ -24,6 +24,7 @@ import {
   runFullPIR,
   getSetBits,
   recoverByCollusion,
+  lowBitsMask,
 } from './pir.ts';
 import { CATALOG, DB_SIZE, DATABASE, encodeBook } from './catalog.ts';
 
@@ -126,6 +127,19 @@ describe('generateQuery (privacy-by-construction)', () => {
     // With a real CSPRNG over up to 2^DB_SIZE values, 64 draws should not all
     // collapse to a single value. This catches a mask stuck at a constant.
     expect(masks.size).toBeGreaterThan(1);
+  });
+});
+
+describe('lowBitsMask (32-bit packing boundary)', () => {
+  it('keeps all 32 bits instead of wrapping the shift count to zero', () => {
+    expect(lowBitsMask(0)).toBe(0);
+    expect(lowBitsMask(8)).toBe(0xff);
+    expect(lowBitsMask(31)).toBe(0x7fffffff);
+    expect(lowBitsMask(32)).toBe(0xffffffff);
+  });
+
+  it('rejects sizes that cannot fit the packed query representation', () => {
+    expect(() => lowBitsMask(33)).toThrow(/out of range/);
   });
 });
 
