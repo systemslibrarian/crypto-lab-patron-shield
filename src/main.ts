@@ -305,8 +305,23 @@ async function runProtocol(): Promise<void> {
   const titleEl = el('title-reveal');
   await animateReveal(titleEl, result.reconstructed);
 
-  // Show correctness badge
+  // Show the correctness badge — driven by the run's own comparison of the
+  // reconstructed string against CATALOG[targetIndex].title, never asserted. If
+  // r1 XOR r2 ever failed to rebuild the record, this says so instead.
   const badge = el('correctness-badge');
+  if (result.isCorrect) {
+    badge.textContent = '✓ Correct — r₁ ⊕ r₂ rebuilt the exact book';
+    badge.style.color = '';
+    badge.style.background = '';
+    badge.style.borderColor = '';
+  } else {
+    badge.textContent =
+      `⚠ Reconstruction FAILED — r₁ ⊕ r₂ gave "${result.reconstructed}", `
+      + `expected "${CATALOG[selectedBook].title}"`;
+    badge.style.color = 'var(--color-danger)';
+    badge.style.background = 'transparent';
+    badge.style.borderColor = 'var(--color-danger)';
+  }
   badge.style.display = 'inline-block';
 
   await delay(500);

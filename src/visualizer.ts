@@ -172,7 +172,11 @@ export function renderCancellation(
   for (const idx of union) {
     const in1 = s1Bits.includes(idx);
     const in2 = s2Bits.includes(idx);
-    const survives = idx === targetIndex; // the one in exactly one set
+    // Survival is read off the two masks — a record survives iff it is in
+    // exactly one of the sums (a ⊕ a = 0 kills the rest). It is deliberately NOT
+    // "idx === targetIndex": deriving the picture from the answer would draw the
+    // same clean cancellation even if the masks were wrong.
+    const survives = in1 !== in2;
 
     const col = document.createElement('div');
     col.className = 'cancel-col' + (survives ? ' cancel-col-survive' : '');
@@ -191,7 +195,11 @@ export function renderCancellation(
 
     const status = document.createElement('div');
     status.className = 'cancel-status';
-    status.textContent = survives ? '✓ keeps' : '✕ cancels';
+    // A survivor that is not the requested record would mean the query pair was
+    // malformed; say so rather than letting the grid imply everything is fine.
+    status.textContent = survives
+      ? (idx === targetIndex ? '✓ keeps' : '✓ keeps — NOT the requested record')
+      : '✕ cancels';
 
     col.append(label, r1, r2, status);
     grid.appendChild(col);

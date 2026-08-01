@@ -25,7 +25,8 @@ const encoder = new TextEncoder();
 /**
  * Encode a Book into a fixed 64-byte Uint8Array:
  *   Bytes  0–47: UTF-8 title, zero-padded to 48 bytes (truncated if longer)
- *   Bytes 48–63: UTF-8 author last name, zero-padded to 16 bytes (truncated if longer)
+ *   Bytes 48–63: UTF-8 author name as written, zero-padded to 16 bytes and
+ *                truncated if longer ("Yuval Noah Harari" stores as "Yuval Noah Harar")
  */
 export function encodeBook(book: Book): Uint8Array {
   const buf = new Uint8Array(64); // initialized to zeros
