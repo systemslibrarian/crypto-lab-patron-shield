@@ -118,6 +118,9 @@ async function runProtocol(page: Page): Promise<void> {
 }
 
 const DB_SIZE = 8;
+const RECORD_BYTES = 64;
+/** The success verdict. It names the number of bytes it actually compared. */
+const CORRECT_BADGE = `✓ Correct — r₁ ⊕ r₂ rebuilt all ${RECORD_BYTES} bytes of the stored record`;
 
 // ---------------------------------------------------------------- tests
 
@@ -265,9 +268,39 @@ test('the reconstruction hex is the XOR of the two responses, and it is the titl
   // The verdict is the run's own comparison — and must not be the failure branch.
   const badge = page.locator('#correctness-badge');
   await expect(badge).toBeVisible();
-  expect(await text(badge)).toBe('✓ Correct — r₁ ⊕ r₂ rebuilt the exact book');
+  expect(await text(badge)).toBe(CORRECT_BADGE);
   expect(await text(badge)).not.toContain('FAILED');
   expect(await page.locator('#phase-reconstruct').innerText()).not.toContain('Reconstruction FAILED');
+});
+
+test('the download claim matches the number of responses the page shows', async ({ page }) => {
+  await page.goto('.');
+  const titles = await catalogTitles(page);
+  await selectBook(page, 0);
+  await runProtocol(page);
+
+  // The client receives TWO record-sized XOR responses, not "one record's worth
+  // of data" — and the page displays both of them, so the old sentence was
+  // contradicted by an exhibit on the same page.
+  const responses = ['response1-hex', 'response2-hex'];
+  let recordSized = 0;
+  for (const id of responses) {
+    const bytes = await hexBytes(page, id);
+    expect(bytes.length, `${id} must render bytes`).toBeGreaterThan(0);
+    recordSized++;
+  }
+  expect(recordSized, 'the run must display two server responses').toBe(2);
+  expect(titles).toHaveLength(DB_SIZE);
+
+  const lead = await text(page.locator('.hero-why-lead'));
+  expect(lead, 'the motivation must not claim a single record-sized transfer').not.toContain(
+    "one record's worth of data",
+  );
+  expect(lead.toLowerCase()).toContain('two record-sized');
+
+  // The success verdict must name the byte count it actually compared.
+  expect(await text(page.locator('#correctness-badge'))).toBe(CORRECT_BADGE);
+  expect(CORRECT_BADGE).toContain(String(RECORD_BYTES));
 });
 
 test('the cancellation grid survives exactly the requested record', async ({ page }) => {
@@ -373,7 +406,7 @@ test('every book in the catalog is retrieved correctly', async ({ page }) => {
 
     expect(await text(page.locator('#final-book-title')), `book ${i}`).toBe(titles[i]);
     expect(await text(page.locator('#correctness-badge')), `book ${i}`).toBe(
-      '✓ Correct — r₁ ⊕ r₂ rebuilt the exact book',
+      CORRECT_BADGE,
     );
     expect(Number(await text(page.locator('#differing-bit-num'))), `book ${i}`).toBe(i);
     const s1 = await hexValue(page, 'mask-s1-hex');
@@ -433,7 +466,9 @@ test('the collusion attack recovers exactly the book that was requested', async 
   const diff = await hexValue(page, 'collude-diff');
   expect(diff, 'the difference must be the XOR of the two masks').toBe(s1 ^ s2);
   expect(diff & (diff - 1), 'a valid query pair differs in exactly one bit').toBe(0);
-  expect(Math.log2(diff)).toBe(target);
+  // Read the bit position the way the fixed engine does. This line used to call
+  // Math.log2 — reproducing, in the test, the exact defect the panel had.
+  expect(31 - Math.clz32(diff >>> 0)).toBe(target);
 
   // ...and it must name the book, not merely a bit index.
   expect(await text(page.locator('#collude-bit'))).toBe(`[${target}]`);
@@ -484,7 +519,7 @@ test('choosing a different book clears the finished run', async ({ page }) => {
 
 // ---------------------------------------------------------------- other panels
 
-test('the scaling figures are consistent at every slider position', async ({ page }) => {
+test('the √N column mask can address every record, at every slider position', async ({ page }) => {
   await page.goto('.');
   const slider = page.locator('#scaling-slider');
   const min = Number(await slider.getAttribute('min'));
@@ -493,19 +528,70 @@ test('the scaling figures are consistent at every slider position', async ({ pag
   const num = async (id: string): Promise<number> =>
     Number((await text(page.locator(`#${id}`))).replace(/,/g, ''));
 
+  // This test used to recompute `Math.round(Math.sqrt(n))` — the same formula the
+  // page used — so it checked internal consistency and could never see that the
+  // grid was too small. The claim is a CAPACITY claim: a side-by-side grid whose
+  // column mask is `side` bits holds side² records, and that must cover N.
+  let nonSquare = 0;
+  let roundWouldUnderCount = 0;
   for (let exp = min; exp <= max; exp++) {
     await slider.fill(String(exp));
     const n = 10 ** exp;
     expect(await num('scaling-n-label'), `exp ${exp}`).toBe(n);
     expect(await num('scaling-linear'), 'the linear cost is the whole catalog').toBe(n);
-    const root = await num('scaling-sqrt');
-    expect(root, `exp ${exp}: the √N figure must be the square root`).toBe(
-      Math.round(Math.sqrt(n)),
+
+    const side = await num('scaling-sqrt');
+    expect(side * side, `exp ${exp}: a ${side}x${side} grid must hold all ${n} records`)
+      .toBeGreaterThanOrEqual(n);
+    expect((side - 1) * (side - 1), `exp ${exp}: ${side} must be the SMALLEST such side`)
+      .toBeLessThan(n);
+
+    // Pin the specific regression: the positions where Math.round produced a
+    // grid too small to hold the catalog must now show a strictly larger side.
+    const rounded = Math.round(Math.sqrt(n));
+    if (rounded * rounded < n) {
+      roundWouldUnderCount++;
+      expect(side, `exp ${exp}: round gave ${rounded} (${rounded * rounded} < ${n})`)
+        .toBeGreaterThan(rounded);
+    }
+
+    // The shrink factor must be the ratio of the two figures printed beside it,
+    // at the one-decimal precision the page prints (N=1000 gives exactly 31.25,
+    // which is a rounding tie, so compare the rounded values rather than a delta).
+    const factor = await num('scaling-factor');
+    expect(factor, `exp ${exp}: the factor must be N / side`).toBe(
+      Number((n / side).toFixed(1)),
     );
-    expect(await num('scaling-factor'), `exp ${exp}: the factor must be N / √N`).toBe(
-      Math.round(n / root),
+
+    // The padding line must state the true capacity, and say when it is not exact.
+    const padding = await text(page.locator('#scaling-padding'));
+    expect(padding, `exp ${exp}: padding note`).toContain(
+      `${side.toLocaleString('en-US')} × ${side.toLocaleString('en-US')}`,
     );
+    if (side * side === n) {
+      expect(padding).toContain('exactly');
+    } else {
+      nonSquare++;
+      expect(padding, `exp ${exp}: must name the padding records`).toContain(
+        `${(side * side - n).toLocaleString('en-US')} padding records`,
+      );
+    }
   }
+  // Three of the six positions (N = 10, 1,000, 100,000) are not perfect squares,
+  // so the padding line has to be exercised. Two of those three (N = 10 and
+  // N = 100,000) are where Math.round produced a grid too small to hold the
+  // catalog. If the sweep hits neither case it is not testing the fix.
+  expect(nonSquare, 'no slider position had a non-square N — the padding note is untested').toBe(3);
+  expect(
+    roundWouldUnderCount,
+    'no slider position reproduced the Math.round undercount — the ceil fix is untested',
+  ).toBe(2);
+
+  // The figures are query bits; the page must say so rather than implying they
+  // are the total cost. Each server still returns a record-sized response.
+  const scope = await text(page.locator('.scaling-scope-note'));
+  expect(scope.toLowerCase()).toContain('query bits only');
+  expect(scope.toLowerCase()).toContain('response');
 });
 
 test('the naive / PIR toggle shows exactly one panel', async ({ page }) => {
@@ -557,5 +643,97 @@ test('a book can be chosen and queried from the keyboard alone', async ({ page }
   await page.locator('#query-btn').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('#phase-done')).toHaveClass(/phase-visible/, { timeout: 30_000 });
-  expect(await text(page.locator('#final-book-title'))).toBe(titles[4]);
+  // phase-done becomes visible ~100ms BEFORE #final-book-title is filled in, so
+  // reading the text the instant the class lands raced and flaked (2 failures in
+  // 6 observed runs). Wait for the value, then assert it.
+  await expect(page.locator('#final-book-title')).toHaveText(titles[4], { timeout: 30_000 });
+});
+
+// ---------------------------------------------------------------- page claims
+
+test('the skip link lands on the main region it names', async ({ page }) => {
+  await page.goto('.');
+  const skip = page.locator('.cl-skip-link');
+  const href = await skip.getAttribute('href');
+  expect(href, 'the skip link must name a fragment').toMatch(/^#.+/);
+
+  // The whole point of the link is that the target EXISTS. It used to be "#app",
+  // and this page has no #app — so "Skip to content" scrolled nowhere. axe does
+  // not catch this: its skip-link rule is best-practice, not WCAG A/AA, so the
+  // a11y suite passed over it.
+  const targetId = href!.slice(1);
+  await expect(page.locator(`#${targetId}`)).toHaveCount(1);
+
+  // ...and activating it must actually move focus into that region, not merely
+  // scroll. That needs the target to be programmatically focusable.
+  await skip.focus();
+  await expect(skip).toBeFocused();
+  await page.keyboard.press('Enter');
+  const focusedId = await page.evaluate(() => document.activeElement?.id ?? '');
+  expect(focusedId, 'activating the skip link must move focus to the main region').toBe(targetId);
+  await expect(page.locator(`#${targetId}`)).toContainText('Library Catalog');
+});
+
+test('the page links to the repository it actually lives in', async ({ page }) => {
+  await page.goto('.');
+  const hrefs = await page.locator('a[href*="github.com/systemslibrarian"]').evaluateAll(
+    (els) => els.map((e) => (e as HTMLAnchorElement).getAttribute('href') ?? ''),
+  );
+  expect(hrefs.length, 'the page must carry at least one repository link').toBeGreaterThan(0);
+  for (const h of hrefs) {
+    expect(h, 'a header link pointed at the wrong repo (systemslibrarian/patron-shield)').toContain(
+      'systemslibrarian/crypto-lab-patron-shield',
+    );
+  }
+});
+
+test('the visualizer says the servers are simulated in this one browser', async ({ page }) => {
+  await page.goto('.');
+  const note = await text(page.locator('#simulation-note'));
+  expect(note.length, 'the simulation note must not be empty').toBeGreaterThan(0);
+  expect(note.toLowerCase()).toContain('simulation');
+  expect(note.toLowerCase()).toContain('browser');
+});
+
+test('privacy is scoped to the index, and correctness is not claimed from it', async ({ page }) => {
+  await page.goto('.');
+  await catalogTitles(page);
+  await selectBook(page, 0);
+  await runProtocol(page);
+
+  // "learns nothing" must be scoped to WHICH record, and the metadata it does
+  // not hide must be named on the same panel.
+  const scope = await text(page.locator('.privacy-scope-note'));
+  expect(scope.toLowerCase()).toContain('which record you requested');
+  for (const leak of ['when', 'how often', 'response size']) {
+    expect(scope.toLowerCase(), `metadata scope must name "${leak}"`).toContain(leak);
+  }
+
+  // The trust model must not present "at least one server is honest" as buying
+  // correctness — a single malicious server corrupts r1 XOR r2 undetectably.
+  const collusion = await text(page.locator('.collusion-scope'));
+  expect(collusion.toLowerCase()).toContain('correctness');
+  expect(collusion.toLowerCase()).toContain('both');
+  const whole = await page.locator('#phase-done').innerText();
+  expect(whole).not.toContain('the assumption that at least one server is honest');
+
+  // The uniformity claim, not a "random-looking" one: the page teaches an
+  // information-theoretic guarantee three panels up, and "random-looking" is a
+  // computational-indistinguishability phrase that contradicts it.
+  const conclusion = await text(page.locator('.privacy-conclusion'));
+  expect(conclusion.toLowerCase()).toContain('uniformly random');
+  const body = await page.locator('main').innerText();
+  expect(body, 'no panel may describe the masks as merely random-looking').not.toMatch(
+    /cryptographically random-looking|indistinguishable from random noise/,
+  );
+});
+
+test('the query-space figure is computed from the database size, not hardcoded', async ({
+  page,
+}) => {
+  await page.goto('.');
+  const width = Number(await text(page.locator('#mask-width')));
+  const space = Number((await text(page.locator('#mask-space-size'))).replace(/,/g, ''));
+  expect(width, 'the mask width must be the database size').toBe(DB_SIZE);
+  expect(space, 'the query space must be 2^width').toBe(2 ** DB_SIZE);
 });

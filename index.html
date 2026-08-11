@@ -90,7 +90,7 @@
     .cl-btn,.cl-icon{min-width:44px}
   }
 </style>
-<a class="cl-skip-link" href="#app">Skip to content</a>
+<a class="cl-skip-link" href="#main-content">Skip to content</a>
 <header class="cl-topbar" role="banner" aria-label="Crypto Lab">
   <a class="cl-brand" href="https://crypto-lab.systemslibrarian.dev/" aria-label="Crypto Lab home">
     <span class="cl-badge">CL</span>
@@ -155,7 +155,7 @@
           <span class="brand-tagline">private library queries · IT-PIR demo</span>
         </div>
         <nav class="header-links" aria-label="External links">
-          <a href="https://github.com/systemslibrarian/patron-shield" class="header-link" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository">
+          <a href="https://github.com/systemslibrarian/crypto-lab-patron-shield" class="header-link" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository">
             <svg class="icon-github" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="20" height="20">
               <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
             </svg>
@@ -168,7 +168,10 @@
       </div>
     </header>
 
-    <main id="main-content">
+    <!-- tabindex="-1" so the skip link above actually MOVES focus here. Without it
+         the browser scrolls but leaves focus on the link, and the next Tab returns
+         to the header the user just asked to skip. -->
+    <main id="main-content" tabindex="-1">
 
       <header class="cl-hero">
         <div class="cl-hero-main">
@@ -189,7 +192,7 @@
             <h2 id="hero-heading" class="hero-title">Private Information<br/>Retrieval</h2>
             <div class="hero-paragraphs">
               <p>Every time you search a library catalog, the server learns what you looked for. Your reading interests — medical diagnoses, political views, personal struggles — are logged and potentially exposed.</p>
-              <p>Private Information Retrieval solves this. You retrieve exactly what you want from a database — and the server learns <em>nothing</em> about which item you chose.</p>
+              <p>Private Information Retrieval solves this. You retrieve exactly what you want from a database — and the server learns <em>nothing about which item you chose</em>. It still learns that you queried, and when; PIR hides the index, not the visit.</p>
               <p>This demo implements the 1995 Chor et al. two-server IT-PIR protocol. The privacy guarantee is <strong>information-theoretic</strong> — not computational. No assumptions about server computing power are required. It is provably private, on one condition: the two servers <strong>must not collude</strong>. Run a query below, then trigger the collusion attack to see exactly why.</p>
             </div>
           </div>
@@ -234,8 +237,9 @@
             Hiding <em>which</em> record you want looks impossible with one server. The only
             information-theoretic way to keep a single server from learning your query is to
             download the <strong>entire</strong> database every time. PIR's trick is to split the
-            work across two servers — so you transfer one record's worth of data, each server
-            learns nothing, and the only cost is a trust assumption.
+            work across two servers — so instead of downloading all <span class="mono">N</span>
+            records you send two masks and receive <strong>two</strong> record-sized XOR responses,
+            neither server learns which record you asked for, and the cost is a trust assumption.
           </p>
           <div class="why-cards">
             <div class="why-card why-card-bad">
@@ -248,7 +252,7 @@
             </div>
             <div class="why-card why-card-good">
               <div class="why-card-head teal">Two servers · IT-PIR</div>
-              <div class="why-card-body">Send each a random-looking mask, XOR the two replies. Cheap <em>and</em> private — <strong>as long as they don't collude.</strong></div>
+              <div class="why-card-body">Send each a uniformly random mask, XOR the two replies. Cheap <em>and</em> private — <strong>as long as they don't collude.</strong></div>
             </div>
           </div>
         </div>
@@ -281,6 +285,15 @@
       <section id="visualizer" class="section-visualizer" aria-labelledby="viz-heading">
         <div class="section-inner">
           <h2 id="viz-heading" class="section-title">Protocol Visualizer</h2>
+
+          <p class="sim-note" id="simulation-note">
+            <strong>Teaching simulation.</strong> Both "servers", the full catalog, your selection
+            and every response run inside this one browser tab — there is no network, no trust
+            boundary, and the whole database is already on your machine, so no privacy service is
+            actually being performed. A real deployment needs independently operated replicas,
+            separate query delivery paths, and a client you trust: the JavaScript that reads your
+            click already knows the index before PIR begins.
+          </p>
 
           <!-- Phase 0: idle prompt -->
           <div id="phase-idle" class="phase-panel phase-visible">
@@ -319,7 +332,7 @@
             </div>
             <div class="differing-bit-note">
               Bit <span class="teal" id="differing-bit-num"></span> is the only differing bit (highlighted with ring).
-              <br/>These look like random noise to each server. Neither server can determine which bit differs — or which book you want.
+              <br/>Each mask on its own is uniformly random over all <span class="mono" id="mask-space-size"></span> values of a <span class="mono" id="mask-width">8</span>-bit query, so neither server can determine which bit differs — or which book you want. Only a party holding <em>both</em> can see it.
             </div>
           </div>
 
@@ -421,9 +434,18 @@
               </div>
             </div>
             <p class="privacy-conclusion">
-              Neither server <em>alone</em> saw your query. Both received cryptographically random-looking masks.
+              Neither server <em>alone</em> saw your query. Each mask is <strong>uniformly random</strong>
+              from the server that received it — not merely random-<em>looking</em>. That is the difference
+              between this guarantee and a computational one: there is no distribution to distinguish and
+              no work an unbounded server could do to narrow the index down.
               The book you retrieved — <strong id="final-book-title" class="teal"></strong> — stays private
               <strong>as long as the two servers don't pool what they received</strong>.
+            </p>
+            <p class="privacy-scope-note">
+              Scoped precisely: from its own mask, either server learns <em>zero</em> information about
+              <strong>which record you requested</strong>. It does not hide that a query happened, who
+              asked, when, how often, or the response size — those are transport and identity problems
+              this protocol does not address.
             </p>
 
             <!-- The trust assumption: non-collusion -->
@@ -436,8 +458,20 @@
                 The two masks are not independent — by construction
                 <span class="mono">S′ = S ⊕ {i}</span>, so they differ in exactly one bit: yours.
                 Any party holding <em>both</em> masks recovers your query with a single XOR.
-                That is the entire price of two-server PIR: you trade the cost of downloading the
-                whole database for the assumption that <strong>at least one server is honest</strong>.
+                That is the price of two-server PIR: you trade the cost of downloading the
+                whole database for the assumption that <strong>no single party ever sees both
+                masks</strong>.
+              </p>
+              <p class="collusion-intro collusion-scope">
+                Note what that assumption does <em>not</em> buy. Privacy and correctness rest on
+                different requirements, and "at least one server is honest" runs them together:
+                <strong>index privacy</strong> survives as long as no one party holds both masks —
+                one dishonest server learns nothing on its own, however it behaves. But
+                <strong>correctness</strong> needs <em>both</em> servers to compute honestly. A
+                single malicious server can return arbitrary bytes, and <span class="mono">r₁ ⊕ r₂</span>
+                is then a corrupted record with nothing in this protocol to flag it. Detecting that
+                takes an added integrity mechanism — an authenticated database snapshot, commitments,
+                or verifiable computation — which IT-PIR does not supply.
               </p>
               <button id="collude-btn" class="btn btn-danger" aria-expanded="false" aria-controls="collusion-attack">
                 Simulate the servers colluding →
@@ -500,12 +534,13 @@
                 <span aria-hidden="true">✓</span> PIR query
               </div>
               <code id="pir-display" class="cmp-code mono">Server 1 receives: mask = 0x<span id="pir-mask-display">??</span></code>
-              <p class="cmp-note">The server receives only a cryptographic bitmask — indistinguishable from random noise. Your query is provably private.</p>
+              <p class="cmp-note">The server receives only a bitmask drawn uniformly at random — its distribution is identical no matter which book you picked. Which record you requested is provably hidden from this server; the fact that you queried at all is not.</p>
             </div>
           </div>
           <p class="comparison-footer-note">
             In a naive catalog query, the server logs your search term.
-            With PIR, the server only sees a cryptographic mask — indistinguishable from random noise.
+            With PIR, the server only sees a mask whose distribution is the same for every book —
+            so the log it keeps says nothing about which record you wanted.
           </p>
         </div>
       </section>
@@ -595,6 +630,14 @@
                 <div class="scaling-stat-val mono"><span id="scaling-factor">100</span>×</div>
               </div>
             </div>
+            <p id="scaling-padding" class="scaling-padding-note mono"></p>
+            <p class="scaling-scope-note">
+              These three figures count <strong>query bits only</strong> — what the client sends.
+              Each server still returns a record-sized response, so the total bytes on the wire are
+              the two queries <em>plus</em> two responses; in the matrix scheme each server returns
+              one parity per row, so the responses grow with √N as well. PIR shrinks the query, not
+              the reply.
+            </p>
           </div>
         </div>
       </section>

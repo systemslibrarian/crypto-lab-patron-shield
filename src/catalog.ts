@@ -23,21 +23,35 @@ export const DB_SIZE = CATALOG.length;
 const encoder = new TextEncoder();
 
 /**
+ * Truncate a string to at most `maxBytes` of UTF-8 WITHOUT splitting a
+ * character. Slicing the encoded bytes at a fixed offset can cut a multi-byte
+ * code point in half, and the trailing fragment decodes to U+FFFD — so the page
+ * would claim it "rebuilt the exact book" while displaying a replacement
+ * character. Every current catalog entry is ASCII, so this was dormant; the
+ * invariant that permitted it was that encodeBook accepted arbitrary strings.
+ *
+ * `encodeInto` reports how many whole code points fit, which is exactly the
+ * boundary-safe cut.
+ */
+export function encodeUtf8Truncated(text: string, maxBytes: number): Uint8Array {
+  const buf = new Uint8Array(maxBytes);
+  const { written } = encoder.encodeInto(text, buf);
+  return buf.subarray(0, written);
+}
+
+/**
  * Encode a Book into a fixed 64-byte Uint8Array:
  *   Bytes  0–47: UTF-8 title, zero-padded to 48 bytes (truncated if longer)
  *   Bytes 48–63: UTF-8 author name as written, zero-padded to 16 bytes and
  *                truncated if longer ("Yuval Noah Harari" stores as "Yuval Noah Harar")
+ *
+ * Truncation of either field happens at a code-point boundary, never mid-character.
  */
 export function encodeBook(book: Book): Uint8Array {
   const buf = new Uint8Array(64); // initialized to zeros
 
-  const titleBytes = encoder.encode(book.title);
-  const titleSlice = titleBytes.slice(0, 48);
-  buf.set(titleSlice, 0);
-
-  const authorBytes = encoder.encode(book.author);
-  const authorSlice = authorBytes.slice(0, 16);
-  buf.set(authorSlice, 48);
+  buf.set(encodeUtf8Truncated(book.title, 48), 0);
+  buf.set(encodeUtf8Truncated(book.author, 16), 48);
 
   return buf;
 }

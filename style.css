@@ -1624,3 +1624,52 @@ strong { font-weight: 700; }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(107, 122, 141, 0.7);
 }
+
+/* ============================================================
+   Scope / honesty notes added by the 2026-08 claims audit.
+   All use --color-muted, which is documented above as AA-clearing
+   (4.5:1) on the panel surfaces these sit on.
+   ============================================================ */
+
+/* "Teaching simulation" banner at the top of the visualizer. */
+.sim-note {
+  margin: 0 0 20px;
+  padding: 12px 16px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-bg-panel);
+  color: var(--color-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+.sim-note strong { color: var(--color-text); }
+
+/* Padding readout + query-bits-only scope under the scaling slider. */
+.scaling-padding-note {
+  margin: 14px 0 0;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+.scaling-scope-note {
+  margin: 8px 0 0;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+.scaling-scope-note strong { color: var(--color-text); }
+
+/* What "learns nothing" is and is not scoped to. */
+.privacy-scope-note {
+  margin: 10px 0 0;
+  color: var(--color-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+.privacy-scope-note strong { color: var(--color-text); }
+
+/* Privacy-vs-correctness separation inside the collusion block. */
+.collusion-scope {
+  border-top: 1px solid var(--color-border);
+  padding-top: 12px;
+  font-size: 0.88rem;
+}

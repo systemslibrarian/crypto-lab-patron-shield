@@ -305,19 +305,23 @@ async function runProtocol(): Promise<void> {
   const titleEl = el('title-reveal');
   await animateReveal(titleEl, result.reconstructed);
 
-  // Show the correctness badge — driven by the run's own comparison of the
-  // reconstructed string against CATALOG[targetIndex].title, never asserted. If
-  // r1 XOR r2 ever failed to rebuild the record, this says so instead.
+  // Show the correctness badge — driven by the run's own byte-for-byte comparison
+  // of r1 XOR r2 against db[targetIndex] (all 64 bytes, title AND author), never
+  // asserted. If r1 XOR r2 ever failed to rebuild the record, this says so instead.
+  // Comparing only the decoded title would call a corrupted author "Correct".
   const badge = el('correctness-badge');
   if (result.isCorrect) {
-    badge.textContent = '✓ Correct — r₁ ⊕ r₂ rebuilt the exact book';
+    badge.textContent = `✓ Correct — r₁ ⊕ r₂ rebuilt all ${result.record.length} bytes of the stored record`;
     badge.style.color = '';
     badge.style.background = '';
     badge.style.borderColor = '';
   } else {
+    const badBytes = [...result.record]
+      .filter((b, k) => b !== result.expectedRecord[k]).length;
     badge.textContent =
       `⚠ Reconstruction FAILED — r₁ ⊕ r₂ gave "${result.reconstructed}", `
-      + `expected "${CATALOG[selectedBook].title}"`;
+      + `expected "${CATALOG[selectedBook].title}" (${badBytes} of `
+      + `${result.expectedRecord.length} record bytes wrong)`;
     badge.style.color = 'var(--color-danger)';
     badge.style.background = 'transparent';
     badge.style.borderColor = 'var(--color-danger)';
@@ -395,13 +399,27 @@ function initScalingSlider(): void {
   const update = (): void => {
     const exp = Number(slider.value);        // 1..6
     const n = Math.pow(10, exp);             // catalog size
-    const root = Math.round(Math.sqrt(n));   // √N query (matrix scheme)
-    const factor = Math.round(n / root);     // ≈ √N shrink
+    // CEIL, not round. The column mask has one bit per COLUMN, so a side of
+    // `side` addresses side² records — it must be at least N. Math.round
+    // understates it whenever N is just above a perfect square: it printed a
+    // 3-bit mask for a 10-record catalog (a 3x3 grid holds 9) and a 316-bit mask
+    // for 100,000 (316² = 99,856, leaving 144 records with no cell). 2 of the 6
+    // slider positions were wrong.
+    const side = Math.ceil(Math.sqrt(n));    // √N query (matrix scheme), rounded up
+    const capacity = side * side;
+    const factor = n / side;                 // N-bit query vs side-bit query
 
     el('scaling-n-label').textContent = fmt(n);
     el('scaling-linear').textContent = fmt(n);
-    el('scaling-sqrt').textContent = fmt(root);
-    el('scaling-factor').textContent = fmt(factor);
+    el('scaling-sqrt').textContent = fmt(side);
+    el('scaling-factor').textContent = factor.toLocaleString('en-US', {
+      maximumFractionDigits: 1,
+    });
+    // Say when the grid is not exactly full, rather than hiding the padding.
+    el('scaling-padding').textContent = capacity === n
+      ? `${fmt(side)} × ${fmt(side)} grid holds exactly ${fmt(n)} records.`
+      : `${fmt(side)} × ${fmt(side)} grid holds ${fmt(capacity)} cells — `
+        + `${fmt(capacity - n)} padding records so every record has a cell.`;
   };
 
   slider.addEventListener('input', update);
@@ -518,9 +536,22 @@ function runSelfAudit(): void {
   }
 }
 
+/**
+ * Fill in the query-space figures from DB_SIZE rather than hardcoding them in
+ * the markup. A literal "2^8" in the prose is a claim that silently goes false
+ * the moment the catalog changes size.
+ */
+function initMaskSpaceLabels(): void {
+  const width = document.getElementById('mask-width');
+  const space = document.getElementById('mask-space-size');
+  if (width) width.textContent = String(DB_SIZE);
+  if (space) space.textContent = (2 ** DB_SIZE).toLocaleString('en-US');
+}
+
 // ============================================================
 // Bootstrap
 // ============================================================
+initMaskSpaceLabels();
 renderCatalog();
 initThemeToggle();
 initScalingSlider();

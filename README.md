@@ -46,23 +46,43 @@ npm run dev
 Prove the crypto yourself — don't take the README's word for it.
 
 ```bash
-npm test        # PIR correctness self-audit (vitest, src/pir.test.ts)
-npm run build   # tsc type-check + production bundle
-npm run test:a11y   # WCAG A/AA gate (Playwright + axe-core, both themes)
+npm test            # PIR correctness self-audit (vitest, src/pir.test.ts)
+npm run build       # tsc type-check + production bundle
+npm run test:e2e    # both browser suites — what CI gates the deploy on
+npm run test:a11y   # WCAG A/AA gate only (Playwright + axe-core, both themes)
+npm run test:claims # on-screen claims gate only
 ```
 
 `npm test` runs the unit suite that backs every claim on this page:
 
 - **Correctness (known-answer test).** For every catalog index, `r1 ⊕ r2`
-  reconstructs the exact stored title — checked across 500 random masks and for
-  **both** cases of the reconstruction proof (target bit set vs. clear).
+  reconstructs the stored record **byte for byte — all 64, title and author** —
+  checked across 500 random masks and for **both** cases of the reconstruction
+  proof (target bit set vs. clear), against the database that was *supplied*
+  rather than the module's global catalog. A title-only check would call a record
+  with a corrupted author "Correct"; `recordsMatch` is tested directly against
+  exactly that counterexample.
 - **Privacy by construction.** The two query masks differ in **exactly one** bit,
   and that bit is the target index (`S ⊕ S′ = 1 << i`); masks stay within
   `DB_SIZE` bits and are freshly random each run.
-- **The collusion attack really works.** `recoverByCollusion` recovers exactly
-  the queried index from both masks (100 trials/index), and correctly returns
-  `-1` for inputs that are not a valid one-bit-differing query pair — i.e. the
-  attack the non-collusion assumption is there to prevent.
+- **The collusion attack really works — at every index the mask width allows.**
+  `recoverByCollusion` recovers exactly the queried index from both masks (100
+  trials/index), and correctly returns `-1` for inputs that are not a valid
+  one-bit-differing query pair. It is exercised over a synthetic **32**-record
+  database, index 31 included: `maskS ^ maskSPrime` is a *signed* int32, so with
+  bit 31 set the XOR is negative, the power-of-two guard passes anyway, and
+  `Math.log2` of a negative is `NaN`. That is the one index the `DB_SIZE ≤ 32`
+  limit permits and the old implementation could not recover.
+- **Index validation.** `generateQuery` rejects non-integer indices. `NaN` used to
+  pass a comparison-only range check (`NaN < 0` and `NaN >= DB_SIZE` are both
+  false) and be coerced to bit 0 by the shift, producing a structurally valid
+  query for record 0 while reporting `differingBit: NaN`.
+- **Database shape.** `runServer` takes its record count *and* record length from
+  the database it is handed — not a global and not a hardcoded 64 — and rejects
+  empty databases, unequal record lengths, and mask bits naming records that do
+  not exist.
+- **Encoding.** Field truncation happens at UTF-8 code-point boundaries, so a
+  multibyte title or author can never decode to a replacement character.
 - **Oracle linearity + plumbing.** `runServer` behaves as a linear XOR oracle
   (single-bit mask returns exactly that record; `server(m1) ⊕ server(m2) =
   server(m1 ⊕ m2)`), `xorBytes` is self-inverse, and records encode to a fixed
@@ -71,6 +91,14 @@ npm run test:a11y   # WCAG A/AA gate (Playwright + axe-core, both themes)
 CI (`.github/workflows/deploy.yml`) runs `npm test` **before** the build, so a
 broken protocol blocks the deploy — the accessibility gate then runs the same
 way.
+
+The browser suite (`npm run test:e2e`) additionally gates the claims the page
+*renders*: that the √N column mask can address every record at every slider
+position (`side² ≥ N > (side-1)²`, not merely that it equals the page's own
+formula), that the scaling figures are labelled as query bits only, that privacy
+is scoped to the requested index, that the trust model does not sell
+"at least one server is honest" as buying correctness, and that the skip link
+reaches a region that exists and takes focus.
 
 **Implementation limit (honest disclosure):** the live 1-D protocol packs each
 query mask into a single 32-bit integer, so it is capped at `DB_SIZE ≤ 32`
