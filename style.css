@@ -94,7 +94,12 @@ body {
   font-size: 16px;
   line-height: 1.6;
   min-height: 100vh;
-  overflow-x: hidden;
+  /* No `overflow-x: hidden`. `overflow` on <body> propagates to the viewport, so
+     it does not make wide content fit — it CLIPS what does not, and clipped
+     content is unreachable rather than awkward (the worse 1.4.10 outcome). It
+     also makes reflow unfalsifiable: with it set,
+     `documentElement.scrollWidth === clientWidth` however wide the content is,
+     so any overflow check passes by construction. */
 }
 
 a {
@@ -587,7 +592,15 @@ strong { font-weight: 700; }
 .btn-secondary {
   background: rgba(0, 212, 184, 0.15);
   color: var(--color-teal);
-  border: 1px solid rgba(0, 212, 184, 0.3);
+  /* WCAG 1.4.11. This button's fill is a 0.15-alpha teal — 1.29:1 against the
+     dark page and 1.10:1 against the light one — so the border is the only thing
+     delineating the control. At `rgba(0, 212, 184, 0.3)` that border measured
+     1.90:1 dark and 1.21:1 light, both under 3:1.
+     A translucent accent cannot satisfy both grounds: it composites toward
+     whichever page it sits on. #12907e is opaque and mid-luminance (0.213), which
+     lands in the overlap where it clears 3:1 against BOTH — 4.69:1 on the dark
+     #0a0e14 and 3.50:1 on the light #f0f2f5. */
+  border: 1px solid #12907e;
 }
 .btn-secondary:hover:not(:disabled) {
   background: rgba(0, 212, 184, 0.25);
