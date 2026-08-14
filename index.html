@@ -11,6 +11,14 @@
         document.documentElement.setAttribute('data-theme', saved ?? 'dark');
       })();
     </script>
+    <!-- Inline favicon (fleet convention): without one, every page load 404s
+         /favicon.ico, and that console error lands in whichever e2e test's
+         error guard the async fetch happens to race into. -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0e14'/%3E%3Cpath d='M16 5l8 3v8c0 5-3.4 8.6-8 11-4.6-2.4-8-6-8-11V8z' fill='none' stroke='%2300d4b8' stroke-width='2.2'/%3E%3Cpath d='M12.5 16l2.5 2.5 5-5' fill='none' stroke='%23f5a623' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
@@ -44,7 +52,13 @@
   .cl-btn{
     display:inline-flex;align-items:center;gap:.4rem;
     padding:.5rem .85rem;border-radius:10px;
-    border:1px solid color-mix(in srgb, var(--accent, #35d6bb) 38%, transparent);
+    /* WCAG 1.4.11. No fill, so this border is the whole control boundary,
+       and mixing the PAGE's --accent ties the ratio to each lab's palette:
+       at 38% of an accent over the fixed-dark bar it measured ~1.5:1, and for
+       dark accents 3:1 is unreachable at any mix percentage. --cl-ink already
+       mixes toward the bar's near-white ink, so mixing it is
+       accent-independent (same fix as simon-period). */
+    border:1px solid color-mix(in srgb, var(--cl-ink) 70%, transparent);
     background:transparent;color:var(--cl-ink);cursor:pointer;
     font:inherit;font-size:.78rem;font-weight:700;letter-spacing:.1em;
     text-transform:uppercase;text-decoration:none;transition:background .15s,border-color .15s,color .15s;
@@ -196,7 +210,11 @@
               <p>This demo implements the 1995 Chor et al. two-server IT-PIR protocol. The privacy guarantee is <strong>information-theoretic</strong> — not computational. No assumptions about server computing power are required. It is provably private, on one condition: the two servers <strong>must not collude</strong>. Run a query below, then trigger the collusion attack to see exactly why.</p>
             </div>
           </div>
-          <div class="hero-diagram" aria-label="Protocol diagram">
+          <!-- role="group": an aria-label on a role-less <div> is a prohibited
+               attribute (ARIA "generic" role) — axe surfaces it only in its
+               `incomplete` bucket, where the old violations-only gate never
+               looked. The group role both permits the label and exposes it. -->
+          <div class="hero-diagram" role="group" aria-label="Protocol diagram">
             <div class="diagram-inner">
               <div class="diagram-client diagram-box">
                 <span class="diagram-label">Client</span>
@@ -397,7 +415,15 @@
                 <div class="cancellation-caption">
                   Why it works: every record sits in <em>both</em> sums except yours.
                 </div>
-                <div id="cancellation-grid" class="cancellation-grid mono" aria-hidden="true"></div>
+                <!-- A labelled, focusable region rather than aria-hidden: the
+                     column run is width:max-content and genuinely scrolls at
+                     phone widths, and a scrolling container with no focusable
+                     content needs tabindex="0" to be keyboard-operable
+                     (WCAG 2.1.1) — which aria-hidden would turn into an
+                     invisible tab stop. Exposing it also puts its ✓/✕ text
+                     under the contrast oracle instead of in a blind spot. -->
+                <div id="cancellation-grid" class="cancellation-grid mono" role="region" tabindex="0"
+                     aria-label="Cancellation table: one column per record in either sum; records in both sums cancel, the single survivor is the requested book"></div>
                 <div class="cancellation-note">
                   Identical terms cancel — <span class="mono">a ⊕ a = 0</span> — so the whole shared
                   part vanishes. Only <span class="teal mono">db[<span id="cancel-target-idx"></span>]</span>,
@@ -526,14 +552,17 @@
               <div class="cmp-panel-label danger-color">
                 <span aria-hidden="true">⚠</span> Naive OPAC query
               </div>
-              <code id="naive-display" class="cmp-code mono">GET /catalog/search?q=<span id="naive-query-text">[select a book above]</span></code>
+              <!-- tabindex="0": the request line is a nowrap overflow-x:auto
+                   scroller at phone widths, so it needs a keyboard focus
+                   target to be scrollable without a pointer (WCAG 2.1.1). -->
+              <code id="naive-display" class="cmp-code mono" role="region" tabindex="0" aria-label="Naive catalog request line">GET /catalog/search?q=<span id="naive-query-text">[select a book above]</span></code>
               <p class="cmp-note">The server receives your exact search term and logs it. Your reading interests are permanently recorded.</p>
             </div>
             <div id="pir-panel" class="cmp-panel" style="display:none">
               <div class="cmp-panel-label teal">
                 <span aria-hidden="true">✓</span> PIR query
               </div>
-              <code id="pir-display" class="cmp-code mono">Server 1 receives: mask = 0x<span id="pir-mask-display">??</span></code>
+              <code id="pir-display" class="cmp-code mono" role="region" tabindex="0" aria-label="PIR request line">Server 1 receives: mask = 0x<span id="pir-mask-display">??</span></code>
               <p class="cmp-note">The server receives only a bitmask drawn uniformly at random — its distribution is identical no matter which book you picked. Which record you requested is provably hidden from this server; the fact that you queried at all is not.</p>
             </div>
           </div>

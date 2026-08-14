@@ -1,99 +1,62 @@
-import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import {
+  boot,
+  driveAllStates,
+  expectBaselineNotStale,
+  NARROW,
+  reportCollected,
+  watchPageErrors,
+} from './gate';
 
 /**
- * WCAG regression gate. Deploys are already gated on the PIR correctness
- * self-audit (the vitest suite in src/pir.test.ts, run via `npm test` in the
- * deploy workflow before the build); this gates them on accessibility the same
- * way. Scans the full page with every collapsible/panel expanded and the live
- * PIR demo driven, in both themes.
+ * WCAG A/AA regression gate.
+ *
+ * The lab is driven along everything it teaches: the arrival state, where the
+ * catalog previews 4 of 8 books, the query button is disabled and the
+ * visualizer shows only its idle hint; the skip link focused and slid into
+ * view; the catalog expanded to all 8 cards; a book selected FROM THE KEYBOARD
+ * (focus + Enter), which arms the query button and fills the naive comparison
+ * side with the search term a logging server would see; the full IT-PIR run —
+ * both masks with their one differing bit highlighted, the two XOR chains, the
+ * byte-wise reconstruction, the cancellation grid and the privacy summary —
+ * with the run proved to have STARTED (a latch on the query button's disabled
+ * attribute) and not merely finished; the cancellation grid focused, which is
+ * the keyboard route into its scroller at 380px; the collusion attack
+ * revealed and VERIFIED to recover exactly the selected index and title; the
+ * PIR side of the comparison; the scaling slider driven with Home/End to both
+ * ends, including the padding-records wording at N=10; a second run, which
+ * must retire the previous collusion result; the theme switched live through
+ * the shared bar with the full run on screen; the run cleared back to idle;
+ * and hover and focus-visible states on the controls that repaint. Every one
+ * of those states is scanned, in both themes, at desktop and phone width.
+ *
+ * See `gate.ts` for why nothing is injected into the page (the old gate's
+ * `addStyleTag` motion kill defeated the bit squares' `forwards` fill and
+ * scanned both query masks invisible, and `visualizer.ts` branches on
+ * `matchMedia`, which a style tag cannot reach), why no panel is revealed from
+ * script, why the lab's defaults are asserted rather than assumed, and why
+ * `violations` is not the whole oracle.
  */
 
-const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
+for (const theme of ['dark', 'light'] as const) {
+  test(`no WCAG A/AA violations in ${theme} theme`, async ({ page }) => {
+    test.setTimeout(1_800_000);
+    const errors = watchPageErrors(page);
+    await boot(page, theme);
+    await driveAllStates(page, theme);
+    expect(errors, errors.join('\n')).toEqual([]);
+    expectBaselineNotStale();
+    reportCollected();
+  });
 
-// Kill animations/transitions so nothing is mid-flight (opacity 0, off-screen)
-// when axe reads computed colors.
-async function neutralizeMotion(page: Page): Promise<void> {
-  await page.addStyleTag({
-    content: `*,*::before,*::after{transition:none!important;animation:none!important}`,
+  test(`no WCAG A/AA violations in ${theme} theme at 380px`, async ({ page }) => {
+    test.setTimeout(1_800_000);
+    const errors = watchPageErrors(page);
+    await page.setViewportSize(NARROW);
+    await boot(page, theme);
+    await driveAllStates(page, `${theme} @380px`);
+    expect(errors, errors.join('\n')).toEqual([]);
+    expectBaselineNotStale();
+    reportCollected();
   });
 }
-
-// Reveal every class-toggled / [hidden] / display:none panel this page uses so
-// their contents get scanned. There are no <details>; panels are class-toggled.
-async function revealAll(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    // Native <details>, if any ever get added.
-    for (const d of document.querySelectorAll('details')) {
-      (d as HTMLDetailsElement).open = true;
-    }
-    // Protocol phase panels (class-toggled visibility).
-    for (const p of document.querySelectorAll('.phase-panel')) {
-      p.classList.remove('phase-hidden');
-      p.classList.add('phase-visible');
-    }
-    // Collusion attack region + any [hidden] element.
-    for (const h of document.querySelectorAll('[hidden]')) {
-      h.removeAttribute('hidden');
-    }
-    // Comparison tabs: force both panels visible (JS toggles display:none).
-    for (const id of ['naive-panel', 'pir-panel']) {
-      const el = document.getElementById(id);
-      if (el) (el as HTMLElement).style.display = 'block';
-    }
-  });
-}
-
-async function scan(page: Page): Promise<void> {
-  const results = await new AxeBuilder({ page }).withTags(TAGS).analyze();
-  const summary = results.violations.map((v) => ({
-    id: v.id,
-    impact: v.impact,
-    help: v.help,
-    nodes: v.nodes.map((n) => n.target.join(' ')).slice(0, 5),
-  }));
-  expect(summary).toEqual([]);
-}
-
-// Drive the interactive PIR demo end-to-end so dynamically-injected result
-// regions (bitmasks, XOR chains, reconstruction, privacy summary, collusion
-// operands) exist in the DOM before scanning.
-async function driveDemo(page: Page): Promise<void> {
-  // Select the first book card, then run the query.
-  await page.locator('.book-card').first().click();
-  const queryBtn = page.locator('#query-btn');
-  await expect(queryBtn).toBeEnabled();
-  await queryBtn.click();
-  // Wait for the run to complete: the final book title fills in at phase-done.
-  await expect(page.locator('#final-book-title')).not.toHaveText('', {
-    timeout: 30_000,
-  });
-  // Trigger the collusion attack so its operand region is populated + visible.
-  await page.locator('#collude-btn').click();
-  await expect(page.locator('#collusion-attack')).toBeVisible();
-  // Flip the comparison tab to the PIR panel so its content is realized too.
-  await page.locator('#toggle-pir').click();
-}
-
-async function prepare(page: Page): Promise<void> {
-  await page.goto('.');
-  // Shared header toggle is wired at runtime; wait for the app + toggle.
-  await expect(page.locator('#cl-theme-toggle')).toBeVisible();
-  await expect(page.locator('.book-card').first()).toBeVisible();
-  await neutralizeMotion(page);
-  await driveDemo(page);
-  await revealAll(page);
-}
-
-test('no WCAG A/AA violations in dark theme', async ({ page }) => {
-  await prepare(page);
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await scan(page);
-});
-
-test('no WCAG A/AA violations in light theme', async ({ page }) => {
-  await prepare(page);
-  await page.locator('#cl-theme-toggle').click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-  await scan(page);
-});

@@ -17,7 +17,12 @@
   --color-s2:         #ff6b4a;
   --color-s2-dim:     rgba(255, 107, 74, 0.12);
   --color-text:       #e8edf2;
-  --color-muted:      #828fa1; /* lightened to clear WCAG AA (4.5:1) on dark surfaces */
+  --color-muted:      #8a96a8; /* clears WCAG AA (4.5:1) on every dark surface it
+                                  sits on, including the two composites the gate
+                                  measured under #828fa1: the card badge on the
+                                  hover surface (was 4.48:1) and the cancel-off
+                                  dot on a survivor column's teal wash (was
+                                  4.19:1). */
   --color-border:     rgba(0, 212, 184, 0.12);
   --color-danger:     #ff4a4a;
   --color-bit-0:      #1a2030;
@@ -61,19 +66,33 @@ html[data-theme='light'] {
   /* The bright dark-mode accents drop to ~1.7:1 on light surfaces. These
      darker variants all clear WCAG AA (>=4.5:1) as text on bg/panel/card and
      as backgrounds carrying light-colored button text. Decorative *-dim
-     rgba() fills are intentionally left bright — they sit behind text, not in it. */
+     rgba() fills are intentionally left bright — they sit behind text, not in it.
+     The s1/s2 values are set by their darkest seat: the collusion-mask hexes on
+     --color-code-bg over the collusion block's red wash, where #8a5a00 measured
+     4.43:1 and #b83612 measured 4.39:1. */
   --color-teal:       #006a5d;
-  --color-s1:         #8a5a00;
-  --color-s2:         #b83612;
+  --color-s1:         #815400;
+  --color-s2:         #b03411;
   --color-danger:     #c0152a;
 }
 
 /* Light-theme fixes for accents hardcoded outside the variable system. */
-html[data-theme='light'] .s1-dim { color: #8a5a00; }
-html[data-theme='light'] .s2-dim { color: #b83612; }
+html[data-theme='light'] .s1-dim { color: #815400; }
+html[data-theme='light'] .s2-dim { color: #b03411; }
+/* The √N matrix diagram is aria-hidden (its prose neighbour states every fact
+   it draws), which puts its text outside BOTH contrast oracles — so it is held
+   to 4.5:1 by hand instead. --color-muted (#515c6b) on the light --color-bit-0
+   (#c8cdd4) measured 4.27:1; this darker ink measures ≈5.5:1. The dark theme
+   pair (--color-muted on #1a2030) measures ≈5:1 and needs no override. */
+html[data-theme='light'] .mb-off { color: #414b58; }
 html[data-theme='light'] .btn-primary:hover:not(:disabled) {
   /* the dark-mode hover (#00f0d0) is far too light for the light button text */
   background: #006d62;
+}
+html[data-theme='light'] .btn-danger {
+  /* #c0152a rides the 4.5:1 line on the expanded fill; darker ink keeps the
+     margin real on every fill state. */
+  color: #a01223;
 }
 
 /* ---- Reset & Base ---- */
@@ -609,17 +628,32 @@ strong { font-weight: 700; }
 .btn-outline {
   background: transparent;
   color: var(--color-muted);
-  border: 1px solid var(--color-card-border);
+  /* WCAG 1.4.11. No fill, so this border is the whole control boundary — and
+     at var(--color-card-border) (a 6%-alpha white) it measured ~1.1:1 against
+     the panel behind it. --color-muted is opaque and mid-luminance in both
+     themes: >5:1 on the dark surfaces, >3:1 on the light ones. */
+  border: 1px solid var(--color-muted);
 }
 .btn-outline:hover:not(:disabled) {
   color: var(--color-text);
-  border-color: var(--color-border);
+  /* Not var(--color-border): that 12%-alpha teal would DELETE the boundary on
+     hover that the rest state just guaranteed. */
+  border-color: var(--color-teal);
 }
 
 .btn-danger {
   background: rgba(255, 74, 74, 0.12);
-  color: var(--color-danger);
-  border: 1px solid rgba(255, 74, 74, 0.4);
+  /* Not var(--color-danger): #ff4a4a measured 4.24:1 over the deepest fill
+     this button reaches (aria-expanded, 0.18-alpha red over the collusion
+     block's wash). This lighter tone clears 4.5:1 on all three fills; the
+     light theme overrides it below for the same reason in the other
+     direction. */
+  color: #ff7d7d;
+  /* WCAG 1.4.11. The 0.12-alpha fill sits inside the collusion block's own
+     red wash, and a 0.4-alpha border over that fill measured ~2.2:1 dark and
+     ~1.8:1 light against the wash — the control dissolved into the panel it
+     warns about. The opaque danger tone clears 3:1 on both themes' washes. */
+  border: 1px solid var(--color-danger);
 }
 .btn-danger:hover:not(:disabled) {
   background: rgba(255, 74, 74, 0.22);
@@ -984,7 +1018,11 @@ strong { font-weight: 700; }
 }
 .cancel-cell.s1 { color: var(--color-s1); }
 .cancel-cell.s2 { color: var(--color-s2); }
-.cancel-off { color: var(--color-muted); opacity: 0.4; }
+/* No opacity fade: the cancellation grid is exposed (labelled region, not
+   aria-hidden), so its "absent" dots are measured text — muted at 0.4 opacity
+   composited to roughly 2:1 on the panel. Bare --color-muted clears 4.5:1 in
+   both themes, and absence still reads from the glyph (· vs ●) and hue. */
+.cancel-off { color: var(--color-muted); }
 
 .cancel-status {
   font-size: 0.6rem;

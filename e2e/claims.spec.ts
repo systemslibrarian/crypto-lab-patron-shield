@@ -17,7 +17,14 @@ function guardPageErrors(page: Page): string[] {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
   page.on('console', (msg) => {
-    if (msg.type() === 'error') errors.push(`console.error: ${msg.text()}`);
+    if (msg.type() !== 'error') return;
+    // Google's font CDN intermittently 404s a woff2 its own css2 response
+    // referenced. That is outside this repo — the page falls back to the next
+    // font stack — and it was flaking a different test on each run. Scoped to
+    // the two font hosts by source URL, so a local 404 still fails.
+    const src = msg.location()?.url ?? '';
+    if (/^https:\/\/fonts\.(gstatic|googleapis)\.com\//.test(src)) return;
+    errors.push(`console.error: ${msg.text()}`);
   });
   return errors;
 }
