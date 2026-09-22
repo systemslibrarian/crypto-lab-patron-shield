@@ -100,6 +100,7 @@ function renderCatalog(): void {
 
   visible.forEach(book => {
     const card = document.createElement('div');
+    card.id = `book-${book.id}`;
     card.className = 'book-card';
     card.setAttribute('role', 'listitem');
     card.setAttribute('tabindex', '0');
