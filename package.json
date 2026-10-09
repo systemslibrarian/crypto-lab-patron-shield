@@ -5,18 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "npm run test:publish-request && tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:a11y": "playwright test e2e/a11y.spec.ts",
     "test:claims": "playwright test e2e/claims.spec.ts",
-    "deploy": "npm run build && gh-pages -d dist"
+    "deploy": "gh workflow run deploy.yml --repo systemslibrarian/crypto-lab-patron-shield --ref main",
+    "test:publish-request": "node --test tests/publish-request.node.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.63.0",
-    "gh-pages": "^6.3.0",
     "typescript": "~7.0.2",
     "vite": "^8.3.2",
     "vitest": "^5.0.3"
