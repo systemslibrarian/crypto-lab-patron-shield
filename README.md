@@ -51,6 +51,8 @@ npm run build       # tsc type-check + production bundle
 npm run test:e2e    # both browser suites — what CI gates the deploy on
 npm run test:a11y   # WCAG A/AA gate only (Playwright + axe-core, both themes)
 npm run test:claims # on-screen claims gate only
+npm run test:workflow  # immutable actions, least privilege, lockfile and merge controls
+npm run test:mutations # replay concrete protocol faults against their owning assertions
 ```
 
 `npm test` runs the unit suite that backs every claim on this page:
