@@ -194,7 +194,10 @@ function startRun(): void {
   runProtocol().finally(() => {
     isRunning = false;
     const btn = document.getElementById('query-btn') as HTMLButtonElement | null;
-    if (btn) btn.disabled = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.setAttribute('aria-disabled', 'false');
+    }
   });
 }
 
@@ -216,6 +219,7 @@ async function runProtocol(): Promise<void> {
   // Disable button during run
   const queryBtn = el<HTMLButtonElement>('query-btn');
   queryBtn.disabled = true;
+  queryBtn.setAttribute('aria-disabled', 'true');
 
   // Hide existing phases, show idle as cleared state
   resetAllPhases();
@@ -352,6 +356,7 @@ async function runProtocol(): Promise<void> {
 
   // Re-enable query button
   queryBtn.disabled = false;
+  queryBtn.setAttribute('aria-disabled', 'false');
 }
 
 // ============================================================

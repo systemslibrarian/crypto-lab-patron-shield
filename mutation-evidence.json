@@ -1,0 +1,82 @@
+[
+  {
+    "name": "query randomness is replaced by a constant mask",
+    "sourceDiff": "diff --git a/src/pir.ts b/src/pir.ts\nindex f9641e0..04a15e0 100644\n--- a/src/pir.ts\n+++ b/src/pir.ts\n@@ -98,7 +98,7 @@ export function generateQuery(targetIndex: number, dbSize: number = DB_SIZE): PI\n   crypto.getRandomValues(rand);\n   // Mask to dbSize bits so only valid bit positions are used. JavaScript\n   // shifts wrap at 32, so `(1 << 32) - 1` is zero rather than 0xffffffff.\n-  const maskS = (rand[0] & lowBitsMask(dbSize)) >>> 0;\n+  const maskS = (0 & lowBitsMask(dbSize)) >>> 0;\n \n   // Flip exactly bit targetIndex to produce S'\n   const maskSPrime = (maskS ^ (1 << targetIndex)) >>> 0;\n",
+    "baseline": "319e9194012c5a27d5ee9d5876b41051fb1537fb9ebeb607d4a2d204b749577b",
+    "mutant": "0cc3debe7850d25ff58152d8db5ae6d17c09615b722472d427c0bfa568dbceca",
+    "namedTest": "produces a fresh random mask across runs",
+    "assertionFailure": true,
+    "retries": 0,
+    "restoredGreen": true
+  },
+  {
+    "name": "non-integer target indices are accepted",
+    "sourceDiff": "diff --git a/src/pir.ts b/src/pir.ts\nindex f9641e0..be0840a 100644\n--- a/src/pir.ts\n+++ b/src/pir.ts\n@@ -87,7 +87,7 @@ export function xorBytes(a: Uint8Array, b: Uint8Array): Uint8Array {\n  *   differingBit — always equals targetIndex\n  */\n export function generateQuery(targetIndex: number, dbSize: number = DB_SIZE): PIRQuery {\n-  if (!Number.isInteger(targetIndex)) {\n+  if (false && !Number.isInteger(targetIndex)) {\n     throw new Error(`generateQuery: targetIndex must be an integer, got ${targetIndex}`);\n   }\n   if (targetIndex < 0 || targetIndex >= dbSize) {\n",
+    "baseline": "319e9194012c5a27d5ee9d5876b41051fb1537fb9ebeb607d4a2d204b749577b",
+    "mutant": "fb557f019121c654435ff8cffb20a5e0828291f843e30ebe4565c1604292e47b",
+    "namedTest": "rejects NaN — which used to pass the range check",
+    "assertionFailure": true,
+    "retries": 0,
+    "restoredGreen": true
+  },
+  {
+    "name": "non-integer server masks are coerced",
+    "sourceDiff": "diff --git a/src/pir.ts b/src/pir.ts\nindex f9641e0..e627fe7 100644\n--- a/src/pir.ts\n+++ b/src/pir.ts\n@@ -161,7 +161,7 @@ export function runServer(db: Uint8Array[], mask: number): Uint8Array {\n   // signed int32 values. Without an explicit guard, runServer(db, NaN) behaved\n   // exactly like mask 0 and runServer(db, 1.5) behaved like mask 1, accepting a\n   // query representation the API never documented or generated.\n-  if (!Number.isInteger(mask) || mask < 0 || mask > 0xffffffff) {\n+  if (false && (!Number.isInteger(mask) || mask < 0 || mask > 0xffffffff)) {\n     throw new Error(`runServer: mask must be an unsigned 32-bit integer, got ${mask}`);\n   }\n   const unsignedMask = mask >>> 0;\n",
+    "baseline": "319e9194012c5a27d5ee9d5876b41051fb1537fb9ebeb607d4a2d204b749577b",
+    "mutant": "9d004c7c8ecd2fb980d6ef4e9b54f051ef6bbceb99a513cb8481595a20b895df",
+    "namedTest": "rejects values that bitwise coercion would silently turn into another mask",
+    "assertionFailure": true,
+    "retries": 0,
+    "restoredGreen": true
+  },
+  {
+    "name": "server masks may name nonexistent records",
+    "sourceDiff": "diff --git a/src/pir.ts b/src/pir.ts\nindex f9641e0..9b47a5f 100644\n--- a/src/pir.ts\n+++ b/src/pir.ts\n@@ -166,7 +166,7 @@ export function runServer(db: Uint8Array[], mask: number): Uint8Array {\n   }\n   const unsignedMask = mask >>> 0;\n   // A mask bit outside the database range names a record that does not exist.\n-  if ((unsignedMask & ~lowBitsMask(size)) >>> 0) {\n+  if (false && ((unsignedMask & ~lowBitsMask(size)) >>> 0)) {\n     throw new Error(\n       `runServer: mask 0x${unsignedMask.toString(16)} sets bits outside the ${size}-record database`,\n     );\n",
+    "baseline": "319e9194012c5a27d5ee9d5876b41051fb1537fb9ebeb607d4a2d204b749577b",
+    "mutant": "b37e2e3b7d8abe90e0d01ed9497d9231a91a5d2763059f0867d7346b444c1861",
+    "namedTest": "rejects mask bits that name records outside the database",
+    "assertionFailure": true,
+    "retries": 0,
+    "restoredGreen": true
+  },
+  {
+    "name": "reconstruction verdict ignores author bytes",
+    "sourceDiff": "diff --git a/src/pir.ts b/src/pir.ts\nindex f9641e0..616b9a8 100644\n--- a/src/pir.ts\n+++ b/src/pir.ts\n@@ -232,7 +232,7 @@ export function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {\n  * run can ever exercise the false branch.\n  */\n export function recordsMatch(reconstructed: Uint8Array, expected: Uint8Array): boolean {\n-  return bytesEqual(reconstructed, expected);\n+  return bytesEqual(reconstructed.subarray(0, 48), expected.subarray(0, 48));\n }\n \n /**\n",
+    "baseline": "319e9194012c5a27d5ee9d5876b41051fb1537fb9ebeb607d4a2d204b749577b",
+    "mutant": "4acbd5b5aa1f7cb65b279f31ec584d3ca48a8bfde9b1c100c786d9834f3be57f",
+    "namedTest": "recordsMatch rejects a record whose AUTHOR bytes were altered",
+    "assertionFailure": true,
+    "retries": 0,
+    "restoredGreen": true
+  },
+  {
+    "name": "bit-31 collusion recovery uses Math.log2 on the signed XOR",
+    "sourceDiff": "diff --git a/src/pir.ts b/src/pir.ts\nindex f9641e0..3db1537 100644\n--- a/src/pir.ts\n+++ b/src/pir.ts\n@@ -304,5 +304,5 @@ export function recoverByCollusion(maskS: number, maskSPrime: number): number {\n   const diff = (maskS ^ maskSPrime) >>> 0;\n   // A valid query pair differs in exactly one bit — diff must be a power of two.\n   if (diff === 0 || (diff & (diff - 1)) !== 0) return -1;\n-  return 31 - Math.clz32(diff);\n+  return Math.log2(maskS ^ maskSPrime);\n }\n",
+    "baseline": "319e9194012c5a27d5ee9d5876b41051fb1537fb9ebeb607d4a2d204b749577b",
+    "mutant": "2d3b14033408125eaaa01d3c64b82965e461091d244f215d353361e458ae1eaf",
+    "namedTest": "recovers index 31 from a mask pair whose XOR sets the sign bit",
+    "assertionFailure": true,
+    "retries": 0,
+    "restoredGreen": true
+  },
+  {
+    "name": "UTF-8 truncation slices through code points",
+    "sourceDiff": "diff --git a/src/catalog.ts b/src/catalog.ts\nindex 727310b..881ef26 100644\n--- a/src/catalog.ts\n+++ b/src/catalog.ts\n@@ -34,9 +34,7 @@ const encoder = new TextEncoder();\n  * boundary-safe cut.\n  */\n export function encodeUtf8Truncated(text: string, maxBytes: number): Uint8Array {\n-  const buf = new Uint8Array(maxBytes);\n-  const { written } = encoder.encodeInto(text, buf);\n-  return buf.subarray(0, written);\n+  return encoder.encode(text).slice(0, maxBytes);\n }\n \n /**\n",
+    "baseline": "319e9194012c5a27d5ee9d5876b41051fb1537fb9ebeb607d4a2d204b749577b",
+    "mutant": "9f87c86312730864b58fe6fcd8846f1a960f76dc4d5f6b857d1e7441545fc8ad",
+    "namedTest": "never produces a replacement character, at any cut point",
+    "assertionFailure": true,
+    "retries": 0,
+    "restoredGreen": true
+  },
+  {
+    "name": "the second query mask no longer flips the requested bit",
+    "sourceDiff": "diff --git a/src/pir.ts b/src/pir.ts\nindex f9641e0..a995e29 100644\n--- a/src/pir.ts\n+++ b/src/pir.ts\n@@ -101,7 +101,7 @@ export function generateQuery(targetIndex: number, dbSize: number = DB_SIZE): PI\n   const maskS = (rand[0] & lowBitsMask(dbSize)) >>> 0;\n \n   // Flip exactly bit targetIndex to produce S'\n-  const maskSPrime = (maskS ^ (1 << targetIndex)) >>> 0;\n+  const maskSPrime = maskS;\n \n   return {\n     targetIndex,\n",
+    "baseline": "319e9194012c5a27d5ee9d5876b41051fb1537fb9ebeb607d4a2d204b749577b",
+    "mutant": "3b76fd4b5f31c0b7fafb81927ec303f1f801526d3ad41a6c587c5d6137aed80f",
+    "namedTest": "masks differ in exactly one bit, and that bit is the target index",
+    "assertionFailure": true,
+    "retries": 0,
+    "restoredGreen": true
+  }
+]
