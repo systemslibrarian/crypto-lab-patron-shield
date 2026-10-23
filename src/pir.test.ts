@@ -442,6 +442,14 @@ describe('runServer validates the database it was handed', () => {
     expect(() => runServer(DATABASE, 1 << DB_SIZE)).toThrow(/outside the 8-record database/);
   });
 
+  it('rejects values that bitwise coercion would silently turn into another mask', () => {
+    for (const mask of [NaN, Infinity, -1, 1.5, 0x1_0000_0000]) {
+      expect(() => runServer(DATABASE, mask), String(mask)).toThrow(
+        /mask must be an unsigned 32-bit integer/,
+      );
+    }
+  });
+
   it('returns a response the length of the records, not a hardcoded 64', () => {
     const db = [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])];
     const r = runServer(db, 0b01);

@@ -1,0 +1,50 @@
+# The browser, accessibility, mutation and build gate is defined once and called
+# by both pull-request CI and the Pages deployment.
+name: Browser gate
+
+on:
+  workflow_call:
+    inputs:
+      upload_pages_artifact:
+        description: Upload dist/ for the Pages deploy caller after every gate passes.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm audit --audit-level=high
+      - run: npm run test:workflow
+      - name: PIR correctness and independent-reference gate
+        run: npm test
+      - run: npm run build
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Browser claims and accessibility gate
+        run: npm run test:e2e
+      - name: Replay recorded protocol mutations
+        run: npm run test:mutations
+      - name: Preserve exact mutation evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: patron-shield-mutation-evidence-${{ github.sha }}
+          path: |
+            mutation-evidence.json
+            mutation-logs/
+          if-no-files-found: error
+          retention-days: 30
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        if: inputs.upload_pages_artifact
+        with:
+          path: dist

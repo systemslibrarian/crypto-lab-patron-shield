@@ -161,6 +161,7 @@ test('selecting a book names it and arms the query', async ({ page }) => {
   expect(status).toContain(`"${titles[5]}"`);
   expect(status).toContain('(index 5)');
   await expect(page.locator('#query-btn')).toBeEnabled();
+  await expect(page.locator('#query-btn')).toHaveAttribute('aria-disabled', 'false');
   await expect(page.locator('#catalog-grid .book-card.selected')).toHaveCount(1);
 
   // The "naive" comparison must quote the very query PIR is avoiding.
@@ -171,6 +172,21 @@ test('selecting a book names it and arms the query', async ({ page }) => {
   await expect(page.locator('#catalog-grid .book-card.selected')).toHaveCount(1);
   expect(await text(page.locator('#selected-title-text'))).toContain('(index 2)');
   expect(await text(page.locator('#naive-query-text'))).toBe(encodeURIComponent(titles[2]));
+});
+
+test('the query button exposes the same disabled state to every user', async ({ page }) => {
+  await page.goto('.');
+  await catalogTitles(page);
+  await selectBook(page, 1);
+
+  const button = page.locator('#query-btn');
+  await button.click();
+  await expect(button).toBeDisabled();
+  await expect(button).toHaveAttribute('aria-disabled', 'true');
+
+  await expect(page.locator('#phase-done')).toHaveClass(/phase-visible/, { timeout: 30_000 });
+  await expect(button).toBeEnabled({ timeout: 30_000 });
+  await expect(button).toHaveAttribute('aria-disabled', 'false');
 });
 
 test('the two masks differ in exactly the bit the page says they do', async ({ page }) => {
@@ -603,6 +619,10 @@ test('the √N column mask can address every record, at every slider position', 
 
 test('the naive / PIR toggle shows exactly one panel', async ({ page }) => {
   await page.goto('.');
+
+  const naiveClaim = (await text(page.locator('#naive-panel'))).toLowerCase();
+  expect(naiveClaim).toContain('can log');
+  expect(naiveClaim).not.toContain('permanently recorded');
 
   await expect(page.locator('#toggle-naive')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#naive-panel')).toBeVisible();

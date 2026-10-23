@@ -186,7 +186,7 @@
         </div>
         <aside class="cl-hero-why" aria-label="Why it matters">
           <span class="cl-hero-why-label">WHY IT MATTERS</span>
-          <p class="cl-hero-why-text">Every catalog search you run is logged, exposing your medical, political, and personal reading interests. Information-theoretic PIR hides which record you fetched with no assumptions about server compute — provably private as long as the two servers never collude.</p>
+          <p class="cl-hero-why-text">Every catalog search you run can be logged, exposing your medical, political, and personal reading interests. Information-theoretic PIR hides which record you fetched with no assumptions about server compute — provably private as long as the two servers never collude.</p>
         </aside>
       </header>
 
@@ -196,7 +196,7 @@
           <div class="hero-text">
             <h2 id="hero-heading" class="hero-title">Private Information<br/>Retrieval</h2>
             <div class="hero-paragraphs">
-              <p>Every time you search a library catalog, the server learns what you looked for. Your reading interests — medical diagnoses, political views, personal struggles — are logged and potentially exposed.</p>
+              <p>Every time you search a library catalog, the server learns what you looked for. Your reading interests — medical diagnoses, political views, personal struggles — can be logged and potentially exposed.</p>
               <p>Private Information Retrieval solves this. You retrieve exactly what you want from a database — and the server learns <em>nothing about which item you chose</em>. It still learns that you queried, and when; PIR hides the index, not the visit.</p>
               <p>This demo implements the 1995 Chor et al. two-server IT-PIR protocol. The privacy guarantee is <strong>information-theoretic</strong> — not computational. No assumptions about server computing power are required. It is provably private, on one condition: the two servers <strong>must not collude</strong>. Run a query below, then trigger the collusion attack to see exactly why.</p>
             </div>
@@ -253,7 +253,7 @@
           <div class="why-cards">
             <div class="why-card why-card-bad">
               <div class="why-card-head danger-color">One server · stay cheap</div>
-              <div class="why-card-body">You send your exact query. The server returns one record — and logs what you read. <strong>No privacy.</strong></div>
+              <div class="why-card-body">You send your exact query. The server returns one record — and can log what you read. <strong>No query privacy.</strong></div>
             </div>
             <div class="why-card why-card-bad">
               <div class="why-card-head danger-color">One server · stay private</div>
@@ -547,7 +547,7 @@
                    scroller at phone widths, so it needs a keyboard focus
                    target to be scrollable without a pointer (WCAG 2.1.1). -->
               <code id="naive-display" class="cmp-code mono" role="region" tabindex="0" aria-label="Naive catalog request line">GET /catalog/search?q=<span id="naive-query-text">[select a book above]</span></code>
-              <p class="cmp-note">The server receives your exact search term and logs it. Your reading interests are permanently recorded.</p>
+              <p class="cmp-note">The server receives your exact search term and can log or retain it. The protocol itself provides no query privacy.</p>
             </div>
             <div id="pir-panel" class="cmp-panel" style="display:none">
               <div class="cmp-panel-label teal">
@@ -558,7 +558,7 @@
             </div>
           </div>
           <p class="comparison-footer-note">
-            In a naive catalog query, the server logs your search term.
+            In a naive catalog query, the server can log your search term.
             With PIR, the server only sees a mask whose distribution is the same for every book —
             so the log it keeps says nothing about which record you wanted.
           </p>

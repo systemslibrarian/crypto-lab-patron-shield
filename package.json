@@ -11,6 +11,8 @@
     "test:e2e": "playwright test",
     "test:a11y": "playwright test e2e/a11y.spec.ts",
     "test:claims": "playwright test e2e/claims.spec.ts",
+    "test:workflow": "node --test tests/workflow-controls.node.mjs",
+    "test:mutations": "node scripts/claim-mutations.mjs",
     "deploy": "gh workflow run deploy.yml --repo systemslibrarian/crypto-lab-patron-shield --ref main",
     "test:publish-request": "node --test tests/publish-request.node.mjs"
   },

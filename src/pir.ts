@@ -157,15 +157,23 @@ export function databaseShape(db: Uint8Array[]): { size: number; recordLength: n
  */
 export function runServer(db: Uint8Array[], mask: number): Uint8Array {
   const { size, recordLength } = databaseShape(db);
+  // Bitwise operators silently coerce NaN, Infinity and fractional numbers to
+  // signed int32 values. Without an explicit guard, runServer(db, NaN) behaved
+  // exactly like mask 0 and runServer(db, 1.5) behaved like mask 1, accepting a
+  // query representation the API never documented or generated.
+  if (!Number.isInteger(mask) || mask < 0 || mask > 0xffffffff) {
+    throw new Error(`runServer: mask must be an unsigned 32-bit integer, got ${mask}`);
+  }
+  const unsignedMask = mask >>> 0;
   // A mask bit outside the database range names a record that does not exist.
-  if (((mask >>> 0) & ~lowBitsMask(size)) >>> 0) {
+  if ((unsignedMask & ~lowBitsMask(size)) >>> 0) {
     throw new Error(
-      `runServer: mask 0x${(mask >>> 0).toString(16)} sets bits outside the ${size}-record database`,
+      `runServer: mask 0x${unsignedMask.toString(16)} sets bits outside the ${size}-record database`,
     );
   }
   const result = new Uint8Array(recordLength); // initialized to zeros
   for (let j = 0; j < size; j++) {
-    if ((mask >>> j) & 1) {
+    if ((unsignedMask >>> j) & 1) {
       for (let k = 0; k < recordLength; k++) {
         result[k] ^= db[j][k];
       }
