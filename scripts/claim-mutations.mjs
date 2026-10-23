@@ -88,10 +88,10 @@ const cases = [
     vitest('src/pir.test.ts', 'recordsMatch rejects a record whose AUTHOR bytes were altered'),
   ],
   [
-    'bit-31 collusion recovery keeps the signed XOR',
+    'bit-31 collusion recovery uses Math.log2 on the signed XOR',
     'src/pir.ts',
-    '  const diff = (maskS ^ maskSPrime) >>> 0;',
-    '  const diff = maskS ^ maskSPrime;',
+    '  return 31 - Math.clz32(diff);',
+    '  return Math.log2(maskS ^ maskSPrime);',
     vitest('src/pir.test.ts', 'recovers index 31 from a mask pair whose XOR sets the sign bit'),
   ],
   [
