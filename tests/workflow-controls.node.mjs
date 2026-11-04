@@ -73,7 +73,9 @@ test('Dependabot leaves majors open and fails closed', () => {
   assert.match(ci, /update-type == 'version-update:semver-minor'/);
   assert.match(ci, /update-type == 'version-update:semver-patch'/);
   assert.match(ci, /if \[ "\$merged" != true \]; then[\s\S]*exit 1/);
-  assert.match(ci, /if ! gh workflow run deploy\.yml[\s\S]*exit 1/);
+  // `gh workflow run` must start its own line so the fleet's dispatch census
+  // can see it, and must still fail the job rather than warn.
+  assert.match(ci, /\n\s*gh workflow run deploy\.yml[^\n]*\\\n\s*\|\| \{[^}]*exit 1; \}/);
   assert.doesNotMatch(ci, /::warning::|exit 0/);
 });
 
