@@ -78,12 +78,6 @@ jobs:
             echo "::error::gate passed, but the Dependabot PR did not merge after 3 attempts"
             exit 1
           fi
-          # Keep `gh workflow run` at the start of its own line. The fleet's
-          # dispatch census matches it as a COMMAND -- line start, `run:`, `;`,
-          # `&`, `|`, or `then` -- so `if ! gh workflow run ...` is invisible to
-          # it, and a lab it cannot see is reported as a lab that does not
-          # dispatch at all. `|| { ...; exit 1; }` still fails the job, which the
-          # warning-only suffix this replaced would not.
           # A merge made with GITHUB_TOKEN raises no push event -- GitHub suppresses
           # them so workflows cannot retrigger themselves -- so deploy would never run
           # and the site would keep serving the previous build. Ask for it explicitly;
