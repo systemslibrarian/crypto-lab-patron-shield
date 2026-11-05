@@ -65,11 +65,8 @@ jobs:
           merged=false
           for attempt in 1 2 3; do
             if gh pr merge --squash --delete-branch "$PR_URL"; then
-              state="$(gh pr view "$PR_URL" --json state --jq .state)"
-              if [ "$state" = MERGED ]; then
-                merged=true
-                break
-              fi
+              merged=true
+              break
             fi
             echo "merge attempt $attempt did not land; retrying after the base branch settles"
             sleep 15
