@@ -8,7 +8,10 @@ import { fileURLToPath, URL } from 'node:url';
 import process from 'node:process';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+// npm hands its own CLI path to every script it runs, so under npm this control
+// exercises exactly the npm that invoked it. A bare `node --test` sets no such
+// variable, so the control falls back to the `npm` on PATH.
+const npmCli = process.env.npm_execpath;
 
 // Replace only the external GitHub boundary; exercise the real npm script.
 // Neither control dispatches a workflow or uploads any local build.
@@ -18,12 +21,9 @@ function request(exitCode) {
   writeFileSync(gh, '#!/usr/bin/env node\nconsole.log(JSON.stringify(process.argv.slice(2)));\nprocess.exit(Number(process.env.PUBLISH_CONTROL_EXIT));\n');
   chmodSync(gh, 0o700);
   try {
-    // Resolve npm through the caller's PATH. npm is not guaranteed to be
-    // installed beneath the Node binary: Homebrew keeps node in its Cellar but
-    // links npm's package into /opt/homebrew/lib/node_modules, so deriving
-    // npm-cli.js from process.execPath made this control fail before it reached
-    // the mocked gh boundary. spawnSync still avoids a shell here.
-    return spawnSync(npmCommand, ['run', 'deploy', '--silent'], {
+    const command = npmCli ? process.execPath : 'npm';
+    const args = npmCli ? [npmCli, 'run', 'deploy', '--silent'] : ['run', 'deploy', '--silent'];
+    return spawnSync(command, args, {
       cwd: root,
       env: { ...process.env, PATH: dir + delimiter + process.env.PATH, GH_TOKEN: '', PUBLISH_CONTROL_EXIT: String(exitCode) },
       encoding: 'utf8',
