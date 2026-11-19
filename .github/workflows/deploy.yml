@@ -15,6 +15,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Both halves of the gate, each called rather than copied: this one and
+  # the browser-gate.yml call in `build` below. deploy waits on both.
+  test:
+    uses: ./.github/workflows/unit-gate.yml
+
   # Pull requests and deployments call the same source-running gate. The gate
   # receives read-only repository authority; Pages and OIDC write authority is
   # isolated to the no-checkout deploy job below.
@@ -24,7 +29,7 @@ jobs:
       upload_pages_artifact: true
 
   deploy:
-    needs: build
+    needs: [build, test]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10

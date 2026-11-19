@@ -1,0 +1,48 @@
+name: Unit gate
+
+# ONE definition of this lab's unit/audit gate, called by ci.yml (where
+# dependabot-auto-merge waits on it) and by the publishing workflow. The
+# browser half already worked this way via browser-gate.yml; this half did
+# not, so the deploy could publish a build whose unit tests and audit had
+# never run against it. `needs:` cannot cross files, so a reusable call is
+# the only way for both to wait on the same thing.
+#
+# It is a separate file rather than `workflow_call` on ci.yml because that
+# file's dependabot-auto-merge job holds contents: write, pull-requests:
+# write and actions: write, and a called workflow may not hold permissions
+# above its caller.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24, 26]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+      # Dev advisories stay VISIBLE but never block: GHSA-fc5q-39xc-vjpf
+      # (picomatch <=4.0.7, high) has no fixed release at all -- 4.0.7 IS the
+      # latest -- and reaches this tree only through vite/vitest/eslint, which
+      # ship nothing to the browser. `npm ls picomatch --omit=dev` is empty here
+      # and `npm audit --omit=dev` reports zero. The blocking step above asks
+      # about production dependencies; this one keeps the full picture in the log.
+      - name: Full dependency audit, development included (non-blocking)
+        continue-on-error: true
+        run: npm audit
+      - run: npm run test:workflow
+      - run: npm test
+      - run: npm run build
