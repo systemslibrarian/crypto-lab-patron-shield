@@ -6,6 +6,7 @@ import test from 'node:test';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const workflowDir = join(root, '.github', 'workflows');
+const DEPLOY = 'deploy.yml';
 const read = (name) => readFileSync(join(workflowDir, name), 'utf8');
 
 test('every third-party action is pinned to a full commit', () => {
@@ -47,8 +48,14 @@ test('deploys never run on pull requests or cancel main publication', () => {
 test('CI tests every supported Node major from the exact lockfile', () => {
   const ci = read('ci.yml');
   const browser = read('browser-gate.yml');
-  assert.match(ci, /node:\s*\[22, 24, 26\]/);
-  for (const source of [ci, browser]) {
+  // The unit/audit gate moved to unit-gate.yml so the publish could wait on
+  // the same definition the auto-merge waits on. Assert where it LIVES, and
+  // that both callers reach it.
+  const unit = read('unit-gate.yml');
+  assert.match(unit, /node:\s*\[22, 24, 26\]/);
+  assert.match(ci, /uses: \.\/\.github\/workflows\/unit-gate\.yml/);
+  assert.match(read(DEPLOY), /uses: \.\/\.github\/workflows\/unit-gate\.yml/);
+  for (const source of [unit, browser]) {
     assert.match(source, /npm ci/);
     // The gate blocks on PRODUCTION dependencies. GHSA-fc5q-39xc-vjpf
     // (picomatch <=4.0.7, high) has no fixed release -- 4.0.7 is the latest --
@@ -113,7 +120,7 @@ test('the dispatch that ships a self-merged bump keeps the paragraph that defend
   // workflow has to gate before it publishes.
   const deploy = read('deploy.yml');
   assert.match(deploy, /build:\n\s+uses: \.\/\.github\/workflows\/browser-gate\.yml/);
-  assert.match(deploy.slice(deploy.indexOf('\n  deploy:')), /needs: build/);
+  assert.match(deploy.slice(deploy.indexOf('\n  deploy:')), /needs: \[build, test\]/);
 
   // A failed dispatch must fail the job rather than print a warning: the whole
   // point is that nothing else ships the merge.
