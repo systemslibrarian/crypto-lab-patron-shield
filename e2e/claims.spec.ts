@@ -538,6 +538,14 @@ test('choosing a different book clears the finished run', async ({ page }) => {
   await expect(page.locator('#phase-reconstruct')).toHaveClass(/phase-hidden/);
   await expect(page.locator('#phase-idle')).toHaveClass(/phase-visible/);
   expect(await text(page.locator('#selected-title-text'))).toContain('(index 6)');
+  await expect(page.locator('#pir-mask-display')).toHaveText('??');
+  await expect(page.locator('#final-book-title')).toBeEmpty();
+  await expect(page.locator('#title-reveal')).toBeEmpty();
+  await expect(page.locator('#recon-result-hex')).toBeEmpty();
+  await expect(page.locator('#correctness-badge')).toBeEmpty();
+  await runProtocol(page);
+  await expect(page.locator('#final-book-title')).toHaveText('Project Hail Mary');
+  await expect(page.locator('#correctness-badge')).toBeVisible();
 });
 
 // ---------------------------------------------------------------- other panels

@@ -53,6 +53,21 @@ function hidePhase(id: string): void {
 function resetAllPhases(): void {
   ['phase-generating', 'phase-server1', 'phase-server2', 'phase-reconstruct', 'phase-done']
     .forEach(id => hidePhase(id));
+  lastResult = null;
+  resetCollusionDemo();
+  for (const id of [
+    'mask-s1', 'mask-s2', 'mask-s1-hex', 'mask-s2-hex', 'differing-bit-num',
+    'xor-chain-s1', 'response1-hex', 'xor-chain-s2', 'response2-hex',
+    'recon-r1-hex', 'recon-r2-hex', 'recon-result-hex', 'cancellation-grid',
+    'cancel-target-idx', 'title-reveal', 's1-indices', 's2-indices',
+    's1-count', 's2-count', 'final-book-title',
+  ]) {
+    el(id).replaceChildren();
+  }
+  el('pir-mask-display').textContent = '??';
+  const badge = el('correctness-badge');
+  badge.style.display = 'none';
+  badge.textContent = '';
   showPhase('phase-idle');
 }
 
@@ -225,12 +240,8 @@ async function runProtocol(): Promise<void> {
   resetAllPhases();
   hidePhase('phase-idle');
 
-  // Collapse any prior collusion demonstration before the new run
-  resetCollusionDemo();
-
   // Run the full PIR computation
   const result = runFullPIR(DATABASE, selectedBook);
-  lastResult = result;
 
   const { query, response1, response2 } = result;
   const s1Bits = getSetBits(query.maskS);
@@ -336,6 +347,7 @@ async function runProtocol(): Promise<void> {
   await delay(500);
 
   // ---- PHASE 5: Privacy proof ----
+  lastResult = result;
   currentPhase = 'done';
   showPhase('phase-done');
   await delay(100);
@@ -468,7 +480,6 @@ function initEventListeners(): void {
   // Query different book
   el('new-book-btn').addEventListener('click', () => {
     resetAllPhases();
-    resetCollusionDemo();
     currentPhase = 'idle';
     document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
   });
